@@ -1,0 +1,6 @@
+-mdisable-hardware-atomics
+"-specs=C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/build/specs/picolibc.specs"
+-mlongcalls
+-fno-builtin-memcpy
+-fno-builtin-memset
+-fno-builtin-bzero

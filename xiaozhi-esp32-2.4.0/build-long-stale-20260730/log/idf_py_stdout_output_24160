@@ -1,0 +1,116 @@
+Command: cmake -G Ninja -B C:\Users\Admin\Desktop\ESP32\ESP32-S3-AI\ESP32-S3-AI\xiaozhi-esp32-2.4.0\build -DPYTHON_DEPS_CHECKED=1 -DPYTHON=D:\Espressif\python_env\idf6.0_py3.14_env\Scripts\python.exe -DESP_PLATFORM=1 -DBOARD_NAME=esp32-s3-touch-lcd-3.5 -DBOARD_TYPE=waveshare/esp32-s3-touch-lcd-3.5 -DCCACHE_ENABLE=True C:\Users\Admin\Desktop\ESP32\ESP32-S3-AI\ESP32-S3-AI\xiaozhi-esp32-2.4.0
+-- Component directory D:/Espressif/frameworks/esp-idf-v6.0.2/components/mqtt does not contain a CMakeLists.txt file. No component will be added
+-- Minimal build - ON
+-- ccache will be used for faster recompilation
+-- Building ESP-IDF components for target esp32s3
+NOTICE: Skipping optional dependency: espressif/esp_h264
+NOTICE: Skipping optional dependency: espressif/esp_ipa
+NOTICE: Skipping optional dependency: espressif/esp_lcd_jd9365
+NOTICE: Skipping optional dependency: waveshare/esp_lcd_hx8394
+NOTICE: Skipping optional dependency: waveshare/esp_lcd_st7703
+NOTICE: Skipping optional dependency: espressif/esp32_p4_function_ev_board
+NOTICE: Skipping optional dependency: espressif/esp_lcd_ili9881c
+NOTICE: Skipping optional dependency: espressif/esp_lcd_ek79007
+NOTICE: Skipping optional dependency: espressif/esp_hosted
+NOTICE: Skipping optional dependency: espressif/esp_wifi_remote
+NOTICE: Skipping optional dependency: espfriends/servo_dog_ctrl
+NOTICE: Skipping optional dependency: espressif/touch_slider_sensor
+NOTICE: Skipping optional dependency: espressif/touch_button_sensor
+NOTICE: Processing 72 dependencies:
+NOTICE: [1/72] 78/esp-ml307 (3.6.6)
+NOTICE: [2/72] 78/esp-wifi-connect (3.2.2)
+NOTICE: [3/72] 78/esp_lcd_nv3023 (1.0.1)
+NOTICE: [4/72] 78/uart-eth-modem (0.6.0)
+NOTICE: [5/72] 78/uart-uhci (0.3.2)
+NOTICE: [6/72] 78/xiaozhi-fonts (2.0.0)
+NOTICE: [7/72] esphome/esp-hub75 (0.3.6)
+NOTICE: [8/72] espressif/adc_battery_estimation (0.2.2)
+NOTICE: [9/72] espressif/bmi270_sensor (0.1.2)
+NOTICE: [10/72] espressif/bq27220 (0.1.1~1)
+NOTICE: [11/72] espressif/button (4.2.0)
+NOTICE: [12/72] espressif/cjson (1.7.19~2)
+NOTICE: [13/72] espressif/cmake_utilities (0.5.0)
+NOTICE: [14/72] espressif/dl_fft (0.6.0)
+NOTICE: [15/72] espressif/esp-dsp (1.8.0)
+NOTICE: [16/72] espressif/esp-sr (2.4.7)
+NOTICE: [17/72] espressif/esp32-camera (2.1.7)
+NOTICE: [18/72] espressif/esp_audio_codec (2.5.0)
+NOTICE: [19/72] espressif/esp_audio_effects (1.3.0~1)
+NOTICE: [20/72] espressif/esp_cam_sensor (2.3.0)
+NOTICE: [21/72] espressif/esp_codec_dev (1.5.11)
+NOTICE: [22/72] espressif/esp_image_effects (1.1.0)
+NOTICE: [23/72] espressif/esp_io_expander (1.2.1)
+NOTICE: [24/72] espressif/esp_io_expander_tca9554 (2.0.3)
+NOTICE: [25/72] espressif/esp_io_expander_tca95xx_16bit (2.0.2)
+NOTICE: [26/72] espressif/esp_jpeg (1.3.1)
+NOTICE: [27/72] espressif/esp_lcd_axs15231b (2.1.0)
+NOTICE: [28/72] espressif/esp_lcd_co5300 (2.1.0)
+NOTICE: [29/72] espressif/esp_lcd_gc9a01 (2.0.4)
+NOTICE: [30/72] espressif/esp_lcd_ili9341 (2.0.2)
+NOTICE: [31/72] espressif/esp_lcd_panel_io_additions (1.0.1~1)
+NOTICE: [32/72] espressif/esp_lcd_spd2010 (2.0.0~1)
+NOTICE: [33/72] espressif/esp_lcd_st7701 (2.0.2~2)
+NOTICE: [34/72] espressif/esp_lcd_st77916 (2.0.2)
+NOTICE: [35/72] espressif/esp_lcd_st7796 (1.3.5)
+NOTICE: [36/72] espressif/esp_lcd_touch (1.2.1)
+NOTICE: [37/72] espressif/esp_lcd_touch_cst816s (1.1.1~2)
+NOTICE: [38/72] espressif/esp_lcd_touch_ft5x06 (1.1.0~2)
+NOTICE: [39/72] espressif/esp_lcd_touch_gt1151 (1.1.0~2)
+NOTICE: [40/72] espressif/esp_lcd_touch_gt911 (1.2.0~3)
+NOTICE: [41/72] espressif/esp_lcd_touch_st7123 (1.0.2)
+NOTICE: [42/72] espressif/esp_lvgl_port (2.8.0~1)
+NOTICE: [43/72] espressif/esp_mmap_assets (1.4.0)
+NOTICE: [44/72] espressif/esp_new_jpeg (0.6.1)
+NOTICE: [45/72] espressif/esp_sccb_intf (0.0.8)
+NOTICE: [46/72] espressif/esp_video (2.3.0)
+NOTICE: [47/72] espressif/freetype (2.14.2)
+NOTICE: [48/72] espressif/gmf_fft (1.0.0)
+NOTICE: [49/72] espressif/i2c_bus (1.5.2)
+NOTICE: [50/72] espressif/iot_eth (0.1.0)
+NOTICE: [51/72] espressif/iot_usbh_cdc (3.1.0)
+NOTICE: [52/72] espressif/iot_usbh_rndis (0.3.1)
+NOTICE: [53/72] espressif/knob (1.1.0)
+NOTICE: [54/72] espressif/led_strip (3.0.3)
+NOTICE: [55/72] espressif/mqtt (1.0.0)
+NOTICE: [56/72] espressif/usb (1.5.0)
+NOTICE: [57/72] espressif/usb_host_uvc (2.5.1)
+NOTICE: [58/72] espressif2022/esp_emote_assets (0.1.2)
+NOTICE: [59/72] espressif2022/esp_emote_expression (1.0.2)
+NOTICE: [60/72] espressif2022/esp_emote_gfx (3.0.1)
+NOTICE: [61/72] espressif2022/image_player (1.1.1)
+NOTICE: [62/72] laride/heatshrink (0.4.1)
+NOTICE: [63/72] lvgl/lvgl (9.5.0)
+NOTICE: [64/72] m5stack/m5ioe1 (1.0.9)
+NOTICE: [65/72] m5stack/m5pm1 (1.0.7)
+NOTICE: [66/72] tny-robotics/sh1106-esp-idf (1.0.1)
+NOTICE: [67/72] txp666/otto-emoji-gif-component (1.3.0)
+NOTICE: [68/72] waveshare/custom_io_expander_ch32v003 (2.0.0)
+NOTICE: [69/72] waveshare/esp_lcd_sh8601 (1.0.2)
+NOTICE: [70/72] waveshare/esp_lcd_touch_cst9217 (1.0.4)
+NOTICE: [71/72] wvirgil123/sscma_client (1.0.3)
+NOTICE: [72/72] idf (6.0.2)
+-- CONFIG_ESP32P4_SELECTS_REV_LESS_V3 is 
+-- IDF_VERSION_MAJOR is 6
+-- IDF_VERSION_MINOR is 0
+-- IDF_VERSION_PATCH is 2
+-- TARGET_LIB_PATH is set to: esp32s3
+-- ESP-TEE is currently supported only on the esp32c6;esp32h2;esp32c5;esp32c61 SoCs
+NOTICE: Skipping optional dependency: espressif/esp_lcd_jd9365
+NOTICE: Skipping optional dependency: waveshare/esp_lcd_hx8394
+NOTICE: Skipping optional dependency: waveshare/esp_lcd_st7703
+NOTICE: Skipping optional dependency: espressif/esp32_p4_function_ev_board
+NOTICE: Skipping optional dependency: espressif/esp_lcd_ili9881c
+NOTICE: Skipping optional dependency: espressif/esp_lcd_ek79007
+NOTICE: Skipping optional dependency: espressif/esp_hosted
+NOTICE: Skipping optional dependency: espressif/esp_wifi_remote
+NOTICE: Skipping optional dependency: espfriends/servo_dog_ctrl
+NOTICE: Skipping optional dependency: espressif/touch_slider_sensor
+NOTICE: Skipping optional dependency: espressif/touch_button_sensor
+NOTICE: Skipping optional dependency: espressif/esp_h264
+NOTICE: Skipping optional dependency: espressif/esp_ipa
+-- KCONFIG_REPORT_VERBOSITY not set, using default
+-- Project sdkconfig file C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/sdkconfig
+-- Compiler supported targets: xtensa-esp-elf
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting CXX compiler ABI info

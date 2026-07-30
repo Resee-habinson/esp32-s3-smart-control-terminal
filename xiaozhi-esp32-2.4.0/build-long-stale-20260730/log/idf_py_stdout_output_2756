@@ -1,0 +1,205 @@
+Command: cmake -G Ninja -B C:\Users\Admin\Desktop\ESP32\ESP32-S3-AI\ESP32-S3-AI\xiaozhi-esp32-2.4.0\build -DPYTHON_DEPS_CHECKED=1 -DPYTHON=D:\Espressif\python_env\idf6.0_py3.14_env\Scripts\python.exe -DESP_PLATFORM=1 -DIDF_TARGET=esp32s3 -DCCACHE_ENABLE=True C:\Users\Admin\Desktop\ESP32\ESP32-S3-AI\ESP32-S3-AI\xiaozhi-esp32-2.4.0
+-- Existing sdkconfig 'C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/sdkconfig' renamed to 'C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/sdkconfig.old'.
+-- Found Git: D:/Git/cmd/git.exe (found version "2.54.0.windows.1")
+-- Component directory D:/Espressif/frameworks/esp-idf-v6.0.2/components/mqtt does not contain a CMakeLists.txt file. No component will be added
+-- Minimal build - ON
+-- ccache will be used for faster recompilation
+-- The C compiler identification is GNU 15.2.0
+-- The CXX compiler identification is GNU 15.2.0
+-- The ASM compiler identification is GNU
+-- Found assembler: D:/Espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc.exe
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: D:/Espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: D:/Espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32s3-elf-g++.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Building ESP-IDF components for target esp32s3
+NOTICE: Skipping optional dependency: espressif/esp_h264
+NOTICE: Skipping optional dependency: espressif/esp_ipa
+NOTICE: Skipping optional dependency: espressif/esp_lcd_jd9365
+NOTICE: Skipping optional dependency: waveshare/esp_lcd_hx8394
+NOTICE: Skipping optional dependency: waveshare/esp_lcd_st7703
+NOTICE: Skipping optional dependency: espressif/esp32_p4_function_ev_board
+NOTICE: Skipping optional dependency: espressif/esp_lcd_ili9881c
+NOTICE: Skipping optional dependency: espressif/esp_lcd_ek79007
+NOTICE: Skipping optional dependency: espressif/esp_hosted
+NOTICE: Skipping optional dependency: espressif/esp_wifi_remote
+NOTICE: Skipping optional dependency: espfriends/servo_dog_ctrl
+NOTICE: Skipping optional dependency: espressif/touch_slider_sensor
+NOTICE: Skipping optional dependency: espressif/touch_button_sensor
+NOTICE: Processing 72 dependencies:
+NOTICE: [1/72] 78/esp-ml307 (3.6.6)
+NOTICE: [2/72] 78/esp-wifi-connect (3.2.2)
+NOTICE: [3/72] 78/esp_lcd_nv3023 (1.0.1)
+NOTICE: [4/72] 78/uart-eth-modem (0.6.0)
+NOTICE: [5/72] 78/uart-uhci (0.3.2)
+NOTICE: [6/72] 78/xiaozhi-fonts (2.0.0)
+NOTICE: [7/72] esphome/esp-hub75 (0.3.6)
+NOTICE: [8/72] espressif/adc_battery_estimation (0.2.2)
+NOTICE: [9/72] espressif/bmi270_sensor (0.1.2)
+NOTICE: [10/72] espressif/bq27220 (0.1.1~1)
+NOTICE: [11/72] espressif/button (4.2.0)
+NOTICE: [12/72] espressif/cjson (1.7.19~2)
+NOTICE: [13/72] espressif/cmake_utilities (0.5.0)
+NOTICE: [14/72] espressif/dl_fft (0.6.0)
+NOTICE: [15/72] espressif/esp-dsp (1.8.0)
+NOTICE: [16/72] espressif/esp-sr (2.4.7)
+NOTICE: [17/72] espressif/esp32-camera (2.1.7)
+NOTICE: [18/72] espressif/esp_audio_codec (2.5.0)
+NOTICE: [19/72] espressif/esp_audio_effects (1.3.0~1)
+NOTICE: [20/72] espressif/esp_cam_sensor (2.3.0)
+NOTICE: [21/72] espressif/esp_codec_dev (1.5.11)
+NOTICE: [22/72] espressif/esp_image_effects (1.1.0)
+NOTICE: [23/72] espressif/esp_io_expander (1.2.1)
+NOTICE: [24/72] espressif/esp_io_expander_tca9554 (2.0.3)
+NOTICE: [25/72] espressif/esp_io_expander_tca95xx_16bit (2.0.2)
+NOTICE: [26/72] espressif/esp_jpeg (1.3.1)
+NOTICE: [27/72] espressif/esp_lcd_axs15231b (2.1.0)
+NOTICE: [28/72] espressif/esp_lcd_co5300 (2.1.0)
+NOTICE: [29/72] espressif/esp_lcd_gc9a01 (2.0.4)
+NOTICE: [30/72] espressif/esp_lcd_ili9341 (2.0.2)
+NOTICE: [31/72] espressif/esp_lcd_panel_io_additions (1.0.1~1)
+NOTICE: [32/72] espressif/esp_lcd_spd2010 (2.0.0~1)
+NOTICE: [33/72] espressif/esp_lcd_st7701 (2.0.2~2)
+NOTICE: [34/72] espressif/esp_lcd_st77916 (2.0.2)
+NOTICE: [35/72] espressif/esp_lcd_st7796 (1.3.5)
+NOTICE: [36/72] espressif/esp_lcd_touch (1.2.1)
+NOTICE: [37/72] espressif/esp_lcd_touch_cst816s (1.1.1~2)
+NOTICE: [38/72] espressif/esp_lcd_touch_ft5x06 (1.1.0~2)
+NOTICE: [39/72] espressif/esp_lcd_touch_gt1151 (1.1.0~2)
+NOTICE: [40/72] espressif/esp_lcd_touch_gt911 (1.2.0~3)
+NOTICE: [41/72] espressif/esp_lcd_touch_st7123 (1.0.2)
+NOTICE: [42/72] espressif/esp_lvgl_port (2.8.0~1)
+NOTICE: [43/72] espressif/esp_mmap_assets (1.4.0)
+NOTICE: [44/72] espressif/esp_new_jpeg (0.6.1)
+NOTICE: [45/72] espressif/esp_sccb_intf (0.0.8)
+NOTICE: [46/72] espressif/esp_video (2.3.0)
+NOTICE: [47/72] espressif/freetype (2.14.2)
+NOTICE: [48/72] espressif/gmf_fft (1.0.0)
+NOTICE: [49/72] espressif/i2c_bus (1.5.2)
+NOTICE: [50/72] espressif/iot_eth (0.1.0)
+NOTICE: [51/72] espressif/iot_usbh_cdc (3.1.0)
+NOTICE: [52/72] espressif/iot_usbh_rndis (0.3.1)
+NOTICE: [53/72] espressif/knob (1.1.0)
+NOTICE: [54/72] espressif/led_strip (3.0.3)
+NOTICE: [55/72] espressif/mqtt (1.0.0)
+NOTICE: [56/72] espressif/usb (1.5.0)
+NOTICE: [57/72] espressif/usb_host_uvc (2.5.1)
+NOTICE: [58/72] espressif2022/esp_emote_assets (0.1.2)
+NOTICE: [59/72] espressif2022/esp_emote_expression (1.0.2)
+NOTICE: [60/72] espressif2022/esp_emote_gfx (3.0.1)
+NOTICE: [61/72] espressif2022/image_player (1.1.1)
+NOTICE: [62/72] laride/heatshrink (0.4.1)
+NOTICE: [63/72] lvgl/lvgl (9.5.0)
+NOTICE: [64/72] m5stack/m5ioe1 (1.0.9)
+NOTICE: [65/72] m5stack/m5pm1 (1.0.7)
+NOTICE: [66/72] tny-robotics/sh1106-esp-idf (1.0.1)
+NOTICE: [67/72] txp666/otto-emoji-gif-component (1.3.0)
+NOTICE: [68/72] waveshare/custom_io_expander_ch32v003 (2.0.0)
+NOTICE: [69/72] waveshare/esp_lcd_sh8601 (1.0.2)
+NOTICE: [70/72] waveshare/esp_lcd_touch_cst9217 (1.0.4)
+NOTICE: [71/72] wvirgil123/sscma_client (1.0.3)
+NOTICE: [72/72] idf (6.0.2)
+-- CONFIG_ESP32P4_SELECTS_REV_LESS_V3 is 
+-- IDF_VERSION_MAJOR is 6
+-- IDF_VERSION_MINOR is 0
+-- IDF_VERSION_PATCH is 2
+-- TARGET_LIB_PATH is set to: esp32s3
+-- ESP-TEE is currently supported only on the esp32c6;esp32h2;esp32c5;esp32c61 SoCs
+NOTICE: Skipping optional dependency: espressif/esp_lcd_jd9365
+NOTICE: Skipping optional dependency: waveshare/esp_lcd_hx8394
+NOTICE: Skipping optional dependency: waveshare/esp_lcd_st7703
+NOTICE: Skipping optional dependency: espressif/esp32_p4_function_ev_board
+NOTICE: Skipping optional dependency: espressif/esp_lcd_ili9881c
+NOTICE: Skipping optional dependency: espressif/esp_lcd_ek79007
+NOTICE: Skipping optional dependency: espressif/esp_hosted
+NOTICE: Skipping optional dependency: espressif/esp_wifi_remote
+NOTICE: Skipping optional dependency: espfriends/servo_dog_ctrl
+NOTICE: Skipping optional dependency: espressif/touch_slider_sensor
+NOTICE: Skipping optional dependency: espressif/touch_button_sensor
+NOTICE: Skipping optional dependency: espressif/esp_h264
+NOTICE: Skipping optional dependency: espressif/esp_ipa
+-- KCONFIG_REPORT_VERBOSITY not set, using default
+-- Project sdkconfig file C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/sdkconfig
+-- Compiler supported targets: xtensa-esp-elf
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- App "xiaozhi" version: 2.4.0
+-- Found Python3: D:/Espressif/python_env/idf6.0_py3.14_env/Scripts/python.exe (found version "3.14.6") found components: Interpreter
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Performing Test C_COMPILER_SUPPORTS_WFORMAT_SIGNEDNESS
+-- Performing Test C_COMPILER_SUPPORTS_WFORMAT_SIGNEDNESS - Success
+-- Setting up mbedtls configuration
+-- Linkage type is PUBLIC
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_wdt/esp32s3/rom.wdt.ld
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_system/ld/esp32s3/memory.ld.in
+--   -> Preprocessing .in script: D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_system/ld/esp32s3/memory.ld.in
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_system/ld/esp32s3/sections.ld.in
+--   -> Preprocessing .in script: D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_system/ld/esp32s3/sections.ld.in
+--   -> Applying ldgen processing: C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/build/esp-idf/esp_system/ld/sections.ld.in
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_rom/esp32s3/ld/esp32s3.rom.ld
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_rom/esp32s3/ld/esp32s3.rom.api.ld
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_rom/esp32s3/ld/esp32s3.rom.bt_funcs.ld
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_rom/esp32s3/ld/esp32s3.rom.libgcc.ld
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_rom/esp32s3/ld/esp32s3.rom.version.ld
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_master.ld
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_50.ld
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_smp.ld
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_dtm.ld
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_test.ld
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_scan.ld
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_rom/esp32s3/ld/esp32s3.rom.libc.ld
+-- Adding linker script D:/Espressif/frameworks/esp-idf-v6.0.2/components/soc/esp32s3/ld/esp32s3.peripherals.ld
+-- I2C_BUS: 1.5.2
+-- ESP_LCD_NV3023: 1.0.1
+-- IOT_ETH: 0.1.0
+-- ADC_BATTERY_ESTIMATION: 0.2.2
+-- BUTTON: 4.2.0
+-- CONFIG_ESP32P4_SELECTS_REV_LESS_V3 is 
+-- IDF_VERSION_MAJOR is 6
+-- IDF_VERSION_MINOR is 0
+-- IDF_VERSION_PATCH is 2
+-- TARGET_LIB_PATH is set to: esp32s3
+-- ESP_LCD_AXS15231B: 2.1.0
+-- ESP_LCD_CO5300: 2.1.0
+-- ESP_LCD_GC9A01: 2.0.4
+-- ESP_LCD_ILI9341: 2.0.2
+-- ESP_LCD_PANEL_IO_ADDITIONS: 1.0.1
+-- ESP_LCD_SPD2010: 2.0.0
+-- ESP_LCD_ST7701: 2.0.2
+-- ESP_LCD_ST77916: 2.0.2
+-- ESP_LCD_ST7796: 1.3.5
+-- ESP_LCD_TOUCH_ST7123: 1.0.2
+-- LVGL version: 9.5.0
+-- ESP_MMAP_ASSETS: 1.4.0
+-- ESP_CAM_SENSOR: 2.3.0
+-- ESP_VIDEO: 2.3.0
+-- IOT_USBH_CDC: 3.1.0
+-- IOT_USBH_RNDIS: 0.3.1
+-- KNOB: 1.1.0
+-- Could NOT find PkgConfig (missing: PKG_CONFIG_EXECUTABLE) 
+-- ESP_EMOTE_EXPRESSION: 1.0.2
+-- Otto Emoji GIF Component: gifs only at C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/txp666__otto-emoji-gif-component/gifs
+-- ESP_LCD_SH8601: 1.0.2
+-- Default assets build configured: C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/build/generated_assets.bin
+-- Generated default assets flash configured: C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/build/generated_assets.bin -> assets partition
+-- Component idf::espressif2022__esp_emote_expression will be linked with -Wl,--whole-archive
+-- Component idf::main will be linked with -Wl,--whole-archive
+-- Components: 78__esp-ml307 78__esp-wifi-connect 78__esp_lcd_nv3023 78__uart-eth-modem 78__uart-uhci 78__xiaozhi-fonts app_update bootloader bootloader_support bt console cxx driver efuse esp-tls esp_adc esp_app_format esp_blockdev esp_bootloader_format esp_coex esp_common esp_driver_bitscrambler esp_driver_cam esp_driver_dma esp_driver_gpio esp_driver_i2c esp_driver_i2s esp_driver_isp esp_driver_jpeg esp_driver_ledc esp_driver_parlio esp_driver_ppa esp_driver_rmt esp_driver_sd_intf esp_driver_sdmmc esp_driver_sdspi esp_driver_spi esp_driver_tsens esp_driver_uart esp_driver_usb_serial_jtag esp_eth esp_event esp_gdbstub esp_hal_ana_conv esp_hal_cam esp_hal_clock esp_hal_dma esp_hal_gpio esp_hal_gpspi esp_hal_i2c esp_hal_i2s esp_hal_jpeg esp_hal_lcd esp_hal_ledc esp_hal_mspi esp_hal_parlio esp_hal_pmu esp_hal_ppa esp_hal_rmt esp_hal_rtc_timer esp_hal_sd esp_hal_security esp_hal_timg esp_hal_touch_sens esp_hal_twai esp_hal_uart esp_hal_usb esp_hal_wdt esp_http_server esp_hw_support esp_lcd esp_libc esp_mm esp_netif esp_netif_stack esp_partition esp_phy esp_pm esp_psram esp_ringbuf esp_rom esp_security esp_stdio esp_system esp_timer esp_usb_cdc_rom_console esp_wifi esphome__esp-hub75 espressif2022__esp_emote_assets espressif2022__esp_emote_expression espressif2022__esp_emote_gfx espressif2022__image_player espressif__adc_battery_estimation espressif__bmi270_sensor espressif__bq27220 espressif__button espressif__cjson espressif__cmake_utilities espressif__dl_fft espressif__esp-dsp espressif__esp-sr espressif__esp32-camera espressif__esp_audio_codec espressif__esp_audio_effects espressif__esp_cam_sensor espressif__esp_codec_dev espressif__esp_image_effects espressif__esp_io_expander espressif__esp_io_expander_tca9554 espressif__esp_io_expander_tca95xx_16bit espressif__esp_jpeg espressif__esp_lcd_axs15231b espressif__esp_lcd_co5300 espressif__esp_lcd_gc9a01 espressif__esp_lcd_ili9341 espressif__esp_lcd_panel_io_additions espressif__esp_lcd_spd2010 espressif__esp_lcd_st7701 espressif__esp_lcd_st77916 espressif__esp_lcd_st7796 espressif__esp_lcd_touch espressif__esp_lcd_touch_cst816s espressif__esp_lcd_touch_ft5x06 espressif__esp_lcd_touch_gt1151 espressif__esp_lcd_touch_gt911 espressif__esp_lcd_touch_st7123 espressif__esp_lvgl_port espressif__esp_mmap_assets espressif__esp_new_jpeg espressif__esp_sccb_intf espressif__esp_video espressif__freetype espressif__gmf_fft espressif__i2c_bus espressif__iot_eth espressif__iot_usbh_cdc espressif__iot_usbh_rndis espressif__knob espressif__led_strip espressif__mqtt espressif__usb espressif__usb_host_uvc esptool_py fatfs freertos hal heap http_parser laride__heatshrink log lvgl__lvgl lwip m5stack__m5ioe1 m5stack__m5pm1 main mbedtls nvs_flash nvs_sec_provider partition_table pthread sdmmc soc spi_flash spiffs tcp_transport tny-robotics__sh1106-esp-idf txp666__otto-emoji-gif-component vfs waveshare__custom_io_expander_ch32v003 waveshare__esp_lcd_sh8601 waveshare__esp_lcd_touch_cst9217 wear_levelling wpa_supplicant wvirgil123__sscma_client xtensa
+-- Component paths: C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/78__esp-ml307 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/78__esp-wifi-connect C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/78__esp_lcd_nv3023 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/78__uart-eth-modem C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/78__uart-uhci C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/78__xiaozhi-fonts D:/Espressif/frameworks/esp-idf-v6.0.2/components/app_update D:/Espressif/frameworks/esp-idf-v6.0.2/components/bootloader D:/Espressif/frameworks/esp-idf-v6.0.2/components/bootloader_support D:/Espressif/frameworks/esp-idf-v6.0.2/components/bt D:/Espressif/frameworks/esp-idf-v6.0.2/components/console D:/Espressif/frameworks/esp-idf-v6.0.2/components/cxx D:/Espressif/frameworks/esp-idf-v6.0.2/components/driver D:/Espressif/frameworks/esp-idf-v6.0.2/components/efuse D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp-tls D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_adc D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_app_format D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_blockdev D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_bootloader_format D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_coex D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_common D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_bitscrambler D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_cam D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_dma D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_gpio D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_i2c D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_i2s D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_isp D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_jpeg D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_ledc D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_parlio D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_ppa D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_rmt D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_sd_intf D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_sdmmc D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_sdspi D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_spi D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_tsens D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_uart D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_driver_usb_serial_jtag D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_eth D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_event D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_gdbstub D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_ana_conv D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_cam D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_clock D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_dma D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_gpio D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_gpspi D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_i2c D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_i2s D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_jpeg D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_lcd D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_ledc D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_mspi D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_parlio D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_pmu D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_ppa D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_rmt D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_rtc_timer D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_sd D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_security D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_timg D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_touch_sens D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_twai D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_uart D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_usb D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hal_wdt D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_http_server D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_hw_support D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_lcd D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_libc D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_mm D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_netif D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_netif_stack D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_partition D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_phy D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_pm D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_psram D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_ringbuf D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_rom D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_security D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_stdio D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_system D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_timer D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_usb_cdc_rom_console D:/Espressif/frameworks/esp-idf-v6.0.2/components/esp_wifi C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/esphome__esp-hub75 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif2022__esp_emote_assets C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif2022__esp_emote_expression C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif2022__esp_emote_gfx C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif2022__image_player C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__adc_battery_estimation C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__bmi270_sensor C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__bq27220 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__button C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__cjson C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__cmake_utilities C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__dl_fft C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp-dsp C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp-sr C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp32-camera C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_audio_codec C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_audio_effects C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_cam_sensor C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_codec_dev C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_image_effects C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_io_expander C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_io_expander_tca9554 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_io_expander_tca95xx_16bit C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_jpeg C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_axs15231b C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_co5300 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_gc9a01 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_ili9341 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_panel_io_additions C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_spd2010 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_st7701 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_st77916 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_st7796 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_touch C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_touch_cst816s C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_touch_ft5x06 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_touch_gt1151 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_touch_gt911 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lcd_touch_st7123 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_lvgl_port C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_mmap_assets C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_new_jpeg C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_sccb_intf C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__esp_video C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__freetype C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__gmf_fft C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__i2c_bus C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__iot_eth C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__iot_usbh_cdc C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__iot_usbh_rndis C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__knob C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__led_strip C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__mqtt C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__usb C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/espressif__usb_host_uvc D:/Espressif/frameworks/esp-idf-v6.0.2/components/esptool_py D:/Espressif/frameworks/esp-idf-v6.0.2/components/fatfs D:/Espressif/frameworks/esp-idf-v6.0.2/components/freertos D:/Espressif/frameworks/esp-idf-v6.0.2/components/hal D:/Espressif/frameworks/esp-idf-v6.0.2/components/heap D:/Espressif/frameworks/esp-idf-v6.0.2/components/http_parser C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/laride__heatshrink D:/Espressif/frameworks/esp-idf-v6.0.2/components/log C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/lvgl__lvgl D:/Espressif/frameworks/esp-idf-v6.0.2/components/lwip C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/m5stack__m5ioe1 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/m5stack__m5pm1 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/main D:/Espressif/frameworks/esp-idf-v6.0.2/components/mbedtls D:/Espressif/frameworks/esp-idf-v6.0.2/components/nvs_flash D:/Espressif/frameworks/esp-idf-v6.0.2/components/nvs_sec_provider D:/Espressif/frameworks/esp-idf-v6.0.2/components/partition_table D:/Espressif/frameworks/esp-idf-v6.0.2/components/pthread D:/Espressif/frameworks/esp-idf-v6.0.2/components/sdmmc D:/Espressif/frameworks/esp-idf-v6.0.2/components/soc D:/Espressif/frameworks/esp-idf-v6.0.2/components/spi_flash D:/Espressif/frameworks/esp-idf-v6.0.2/components/spiffs D:/Espressif/frameworks/esp-idf-v6.0.2/components/tcp_transport C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/tny-robotics__sh1106-esp-idf C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/txp666__otto-emoji-gif-component D:/Espressif/frameworks/esp-idf-v6.0.2/components/vfs C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/waveshare__custom_io_expander_ch32v003 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/waveshare__esp_lcd_sh8601 C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/waveshare__esp_lcd_touch_cst9217 D:/Espressif/frameworks/esp-idf-v6.0.2/components/wear_levelling D:/Espressif/frameworks/esp-idf-v6.0.2/components/wpa_supplicant C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/managed_components/wvirgil123__sscma_client D:/Espressif/frameworks/esp-idf-v6.0.2/components/xtensa
+-- Configuring done (43.6s)
+-- Generating done (3.1s)
+-- Build files have been written to: C:/Users/Admin/Desktop/ESP32/ESP32-S3-AI/ESP32-S3-AI/xiaozhi-esp32-2.4.0/build
