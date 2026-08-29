@@ -1,6 +1,6 @@
 #include "wifi_board.h"
 #include "codecs/es8311_audio_codec.h"
-#include "display/lcd_display.h"
+#include "BSP/watch_display.h"
 #include "system_reset.h"
 #include "application.h"
 #include "button.h"
@@ -217,8 +217,9 @@ private:
     {
         esp_lcd_touch_handle_t tp;
         esp_lcd_touch_config_t tp_cfg = {
-            .x_max = DISPLAY_WIDTH,
-            .y_max = DISPLAY_HEIGHT,
+            /* FT6336 原始坐标固定为竖屏 320×480；后续再按 270° 映射到 480×320。 */
+            .x_max = DISPLAY_HEIGHT,
+            .y_max = DISPLAY_WIDTH,
             .rst_gpio_num = GPIO_NUM_NC,
             .int_gpio_num = GPIO_NUM_NC,
             .levels = {
@@ -228,7 +229,7 @@ private:
             .flags = {
                 .swap_xy = 1,
                 .mirror_x = 1,
-                .mirror_y = 1,
+                .mirror_y = 0,
             },
         };
         esp_lcd_panel_io_handle_t tp_io_handle = NULL;
@@ -288,16 +289,27 @@ private:
  
         esp_lcd_panel_init(panel);
         esp_lcd_panel_invert_color(panel, DISPLAY_INVERT_COLOR);
-        esp_lcd_panel_swap_xy(panel, DISPLAY_SWAP_XY);
-        esp_lcd_panel_mirror(panel, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
 
-        display_ = new SpiLcdDisplay(panel_io, panel,
+        /*
+         * 屏幕旋转只交给 esp_lvgl_port 配置一次。
+         * WatchDisplay 构造函数会把 swap/mirror 参数传给 lvgl_port_add_disp；若此处再次
+         * 调用 panel_swap_xy/panel_mirror，会形成双重旋转，导致显示坐标与触摸坐标错位，
+         * 并可能在局部刷新时产生越界窗口和短暂白屏。
+         */
+
+        display_ = new WatchDisplay(panel_io, panel,
                                     DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y,
                                     DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY,
                                     DISPLAY_LVGL_BUFFER_HEIGHT, DISPLAY_LVGL_DOUBLE_BUFFER);
     }
 
     void InitializeButtons() {
+        boot_button_.OnLongPress([this]() {
+            Application::GetInstance().Schedule([this]() {
+                static_cast<WatchDisplay*>(display_)->ToggleApplication();
+            });
+        });
+
         boot_button_.OnClick([this]() {
             auto& app = Application::GetInstance();
             if (app.GetDeviceState() == kDeviceStateStarting) {
@@ -323,17 +335,22 @@ private:
 public:
     CustomBoard() :
         boot_button_(BOOT_BUTTON_GPIO) {
+        /*
+         * 此板上电后需要一次软件复位以稳定 LCD/PMIC，但必须在初始化屏幕之前执行。
+         * 旧实现先创建 LVGL 界面、刷白 LCD，再复位整机，因此用户会看到白屏闪烁，
+         * 同时横向菜单的滚动位置也会恢复到起点。
+         */
+        if (esp_reset_reason() == ESP_RST_POWERON) {
+            fflush(stdout);
+            esp_restart();
+        }
+
         InitializePowerSaveTimer();
         InitializeI2c();
         InitializeTca9554();
         InitializeAxp2101();
         InitializeSpi();
         InitializeLcdDisplay();
-        // 解决部分开机黑屏的问题
-        if (esp_reset_reason() == ESP_RST_POWERON) {
-            fflush(stdout);
-            esp_restart();
-        }
         InitializeTouch();
         InitializeButtons();
         InitializeCamera();

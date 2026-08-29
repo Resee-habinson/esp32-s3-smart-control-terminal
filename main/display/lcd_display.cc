@@ -135,7 +135,11 @@ SpiLcdDisplay::SpiLcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_h
 
     ESP_LOGI(TAG, "Initialize LVGL port");
     lvgl_port_cfg_t port_cfg = ESP_LVGL_PORT_INIT_CONFIG();
-    port_cfg.task_priority = 1;
+    /*
+     * 使用 esp_lvgl_port 推荐的优先级 4，避免音频和网络任务繁忙时长时间推迟
+     * 触摸读取、滚动布局与屏幕刷新；不提高到实时任务级别，以免影响音频链路。
+     */
+    port_cfg.task_priority = 4;
 #if CONFIG_SOC_CPU_CORES_NUM > 1
     port_cfg.task_affinity = 1;
 #endif
@@ -369,7 +373,9 @@ void LcdDisplay::SetupUI() {
     auto icon_font = lvgl_theme->icon_font()->font();
     auto large_icon_font = lvgl_theme->large_icon_font()->font();
 
-    auto screen = lv_screen_active();
+    /* 记录小智界面所属屏幕，后续切换到手表应用后仍能准确更新本界面。 */
+    ui_screen_ = lv_screen_active();
+    auto screen = ui_screen_;
     lv_obj_set_style_text_font(screen, text_font, 0);
     lv_obj_set_style_text_color(screen, lvgl_theme->text_color(), 0);
     lv_obj_set_style_bg_color(screen, lvgl_theme->background_color(), 0);
@@ -834,7 +840,9 @@ void LcdDisplay::SetupUI() {
     auto icon_font = lvgl_theme->icon_font()->font();
     auto large_icon_font = lvgl_theme->large_icon_font()->font();
 
-    auto screen = lv_screen_active();
+    /* 记录小智界面所属屏幕，后续切换到手表应用后仍能准确更新本界面。 */
+    ui_screen_ = lv_screen_active();
+    auto screen = ui_screen_;
     lv_obj_set_style_text_font(screen, text_font, 0);
     lv_obj_set_style_text_color(screen, lvgl_theme->text_color(), 0);
     lv_obj_set_style_bg_color(screen, lvgl_theme->background_color(), 0);
@@ -1191,8 +1199,15 @@ void LcdDisplay::SetTheme(Theme* theme) {
 
     auto lvgl_theme = static_cast<LvglTheme*>(theme);
 
-    // Get the active screen
-    lv_obj_t* screen = lv_screen_active();
+    /*
+     * 主题属于小智界面，不能写入当前活动屏幕。手表应用成为活动屏幕后，
+     * 若继续使用 lv_screen_active()，联网加载资源会误改手表字体并触发整页重排。
+     */
+    lv_obj_t* screen = ui_screen_;
+    if (screen == nullptr) {
+        ESP_LOGE(TAG, "Cannot apply theme before LCD UI is initialized");
+        return;
+    }
 
     // Set font
     auto text_font = lvgl_theme->text_font()->font();

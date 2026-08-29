@@ -1,21 +1,22 @@
 {
-    "C_Cpp.intelliSenseEngine":  "default",
-    "idf.espIdfPathWin":  "D:/Espressif/frameworks/esp-idf-v6.0.2/",
-    "idf.pythonInstallPath":  "D:\\Espressif\\python_env\\idf6.0_py3.14_env\\Scripts\\python.exe",
-    "idf.openOcdConfigs":  [
-                               "board/esp32s3-builtin.cfg"
-                           ],
-    "idf.portWin":  "detect",
-    "idf.toolsPathWin":  "D:\\Espressif",
-    "idf.customExtraVars":  {
-                                "IDF_TARGET":  "esp32s3"
-                            },
-    "clangd.path":  "D:\\Espressif\\tools\\esp-clang\\esp-20.1.1_20250829\\esp-clang\\bin\\clangd.exe",
-    "clangd.arguments":  [
-                             "--background-index",
-                             "--query-driver=**",
-                             "--compile-commands-dir=D:\\ESP32-S3-AI-Build"
-                         ],
-    "idf.flashType":  "UART",
-    "idf.buildPathWin":  "D:\\ESP32-S3-AI-Build"
+  "C_Cpp.intelliSenseEngine": "default",
+  "idf.espIdfPathWin": "D:/Espressif/frameworks/esp-idf-v5.5.4/",
+  "idf.pythonInstallPath": "D:\\Espressif\\python_env\\idf5.5_py3.14_env\\Scripts\\python.exe",
+  "idf.toolsPathWin": "D:\\Espressif",
+  "idf.portWin": "COM10",
+  "idf.flashType": "UART",
+  "idf.buildPathWin": "${workspaceFolder}\\build",
+  "idf.openOcdConfigs": [
+    "board/esp32s3-builtin.cfg"
+  ],
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32s3",
+    "ESP_ROM_ELF_DIR": "D:\\Espressif\\tools\\esp-rom-elfs\\20241011"
+  },
+  "clangd.path": "D:\\Espressif\\tools\\esp-clang\\esp-20.1.1_20250829\\esp-clang\\bin\\clangd.exe",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=${workspaceFolder}\\build"
+  ]
 }
