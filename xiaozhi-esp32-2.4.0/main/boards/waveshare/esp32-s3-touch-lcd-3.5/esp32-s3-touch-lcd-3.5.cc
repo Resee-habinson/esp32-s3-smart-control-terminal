@@ -251,7 +251,26 @@ private:
             .disp = lv_display_get_default(), 
             .handle = tp,
         };
-        lvgl_port_add_touch(&touch_cfg);
+        lv_indev_t* touch_indev = lvgl_port_add_touch(&touch_cfg);
+        if (touch_indev == nullptr) {
+            ESP_LOGE(TAG, "Failed to register touch input device");
+            return;
+        }
+
+        /*
+         * LVGL 会在每次手指由松开变为按下时，先向输入设备发送一次
+         * LV_EVENT_PRESSED。把省电计时器复位放在输入设备层，可以覆盖所有
+         * 页面和控件，也不会依赖事件冒泡，更不会重复处理滑动期间的每一帧。
+         *
+         * 回调运行在 LVGL 输入读取任务中，不属于中断上下文；WakeUp() 仅复位
+         * 空闲计时，并在已经降亮度时执行原有的屏幕与背光恢复回调。
+         */
+        lv_indev_add_event_cb(touch_indev, [](lv_event_t* event) {
+            auto* board = static_cast<CustomBoard*>(lv_event_get_user_data(event));
+            if (board != nullptr && board->power_save_timer_ != nullptr) {
+                board->power_save_timer_->WakeUp();
+            }
+        }, LV_EVENT_PRESSED, this);
         ESP_LOGI(TAG, "Touch panel initialized successfully");
     }
 
@@ -314,6 +333,9 @@ private:
             auto& app = Application::GetInstance();
             if (app.GetDeviceState() == kDeviceStateStarting) {
                 EnterWifiConfigMode();
+                return;
+            }
+            if (static_cast<WatchDisplay*>(display_)->HandleBootClick()) {
                 return;
             }
             app.ToggleChatState();

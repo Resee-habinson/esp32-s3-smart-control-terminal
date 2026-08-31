@@ -3,6 +3,8 @@
 
 #include <lvgl.h>
 
+#include "watch_apps.h"
+
 /**
  * 手表应用外壳。
  *
@@ -28,6 +30,9 @@ public:
     /** 函数：在手表与小智应用之间切换；参数：无；返回值：无 */
     void Toggle();
 
+    /** 函数：应用内短按 BOOT 返回主页；参数：无；返回值：true 表示已处理 */
+    bool HandleBootClick();
+
     /** 函数：查询当前是否显示小智；参数：无；返回值：true 表示小智可见 */
     bool IsXiaozhiVisible() const { return active_app_ == ActiveApp::kXiaozhi; }
 
@@ -35,6 +40,7 @@ private:
     enum class ActiveApp { kWatch, kXiaozhi };
 
     static void MenuClickCallback(lv_event_t* event);
+    static void WeatherClickCallback(lv_event_t* event);
     static void MenuScrollCallback(lv_event_t* event);
     static void LayoutMenu(lv_obj_t* menu);
     void CreateWatchScreen();
@@ -51,6 +57,7 @@ private:
     lv_obj_t* second_label_ = nullptr;
     lv_obj_t* weather_image_ = nullptr;  // 主页天气图标，由 LVGL 管理生命周期
     lv_timer_t* clock_timer_ = nullptr;
+    WatchApplications applications_;
     ActiveApp active_app_ = ActiveApp::kWatch;
 };
 

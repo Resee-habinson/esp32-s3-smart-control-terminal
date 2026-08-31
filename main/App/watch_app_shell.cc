@@ -96,6 +96,7 @@ void WatchAppShell::CreateWatchScreen() {
     CreateClock(canvas);
     CreateWeatherWidget(canvas);
     CreateMenu(canvas);
+    applications_.Initialize(watch_screen_);
     clock_timer_ = lv_timer_create(ClockTimerCallback, 1000, this);
     UpdateClock();
 }
@@ -132,6 +133,13 @@ void WatchAppShell::CreateWeatherWidget(lv_obj_t* parent) {
     lv_obj_set_size(weather_image_, WEATHER_IMG_WIDTH, WEATHER_IMG_HEIGHT);
     lv_obj_set_pos(weather_image_, 15, 190);
     lv_obj_remove_flag(weather_image_, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_flag(weather_image_, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(weather_image_, WeatherClickCallback, LV_EVENT_CLICKED, this);
+}
+
+void WatchAppShell::WeatherClickCallback(lv_event_t* event) {
+    auto* shell = static_cast<WatchAppShell*>(lv_event_get_user_data(event));
+    if (shell != nullptr) shell->applications_.OpenWeather();
 }
 
 void WatchAppShell::CreateMenu(lv_obj_t* parent) {
@@ -217,9 +225,11 @@ void WatchAppShell::ClockTimerCallback(lv_timer_t* timer) {
 }
 
 void WatchAppShell::MenuClickCallback(lv_event_t* event) {
-    /* 后续逐个接入原 fs_create_* 实现；当前只记录索引，不改变原始菜单布局。 */
+    auto* shell = static_cast<WatchAppShell*>(lv_event_get_user_data(event));
     const auto index = reinterpret_cast<uintptr_t>(lv_obj_get_user_data(lv_event_get_target_obj(event)));
-    ESP_LOGI(kTag, "Watch menu selected: %u", static_cast<unsigned>(index));
+    if (shell != nullptr && !shell->applications_.Open(index)) {
+        ESP_LOGW(kTag, "Failed to open watch app index=%u", static_cast<unsigned>(index));
+    }
 }
 
 void WatchAppShell::ShowXiaozhi() {
@@ -246,4 +256,12 @@ void WatchAppShell::Toggle() {
     } else {
         ShowXiaozhi();
     }
+}
+
+bool WatchAppShell::HandleBootClick() {
+    if (!lvgl_port_lock(1000)) return false;
+    const bool handled = active_app_ == ActiveApp::kWatch && applications_.IsOpen();
+    if (handled) applications_.Close();
+    lvgl_port_unlock();
+    return handled;
 }

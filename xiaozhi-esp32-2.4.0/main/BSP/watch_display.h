@@ -12,6 +12,9 @@ public:
     /** 函数：先创建原小智 UI，再创建独立手表 Screen；参数：无；返回值：无 */
     void SetupUI() override;
 
+    /** 函数：应用内短按 BOOT 返回主页；参数：无；返回值：true 表示已处理 */
+    bool HandleBootClick() { return shell_.HandleBootClick(); }
+
     /** 函数：切换手表/小智应用；参数：无；返回值：无 */
     void ToggleApplication() { shell_.Toggle(); }
 
