@@ -12,6 +12,7 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <vector>
 
 class DynamicGlyphCache;
 class LvglFont;
@@ -51,6 +52,11 @@ protected:
     std::chrono::system_clock::time_point last_status_update_time_;
     esp_timer_handle_t notification_timer_ = nullptr;
     std::unique_ptr<DynamicGlyphCache> dynamic_glyph_cache_;
+    /*
+     * LVGL 样式只保存 lv_font_t 裸指针。主题运行时替换字体后，已经创建的自定义页面
+     * 仍可能引用旧字体，因此必须把旧字体所有者保留到 Display 析构，防止绘制时悬空。
+     */
+    std::vector<std::shared_ptr<LvglFont>> retired_text_fonts_;
 
     friend class DisplayLockGuard;
     virtual bool Lock(int timeout_ms = 0) = 0;

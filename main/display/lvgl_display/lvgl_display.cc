@@ -1,6 +1,7 @@
 #include <esp_err.h>
 #include <esp_log.h>
 #include <material_symbols.h>
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -57,10 +58,20 @@ bool LvglDisplay::SetTextFont(std::shared_ptr<LvglFont> text_font) {
         return false;
     }
 
-    // LVGL styles keep raw lv_font_t pointers. Keep the previous font owners alive until the
-    // current theme has rebound every style to the new font.
+    /*
+     * LVGL 的本地样式保存的是 lv_font_t 裸指针，SetTheme 只能重新绑定小智主界面，
+     * 无法遍历并修正手表应用等扩展页面。旧实现仅在本函数栈内暂存旧 shared_ptr，
+     * 返回后旧字体仍会析构，随后绘制扩展页面就会触发 InstrFetchProhibited。
+     */
     auto previous_light_font = light_theme != nullptr ? light_theme->text_font() : nullptr;
     auto previous_dark_font = dark_theme != nullptr ? dark_theme->text_font() : nullptr;
+    const auto retain_previous_font = [this, &text_font](const std::shared_ptr<LvglFont>& previous) {
+        if (previous == nullptr || previous == text_font) return;
+        const auto existing = std::find(retired_text_fonts_.begin(), retired_text_fonts_.end(), previous);
+        if (existing == retired_text_fonts_.end()) retired_text_fonts_.push_back(previous);
+    };
+    retain_previous_font(previous_light_font);
+    retain_previous_font(previous_dark_font);
     if (light_theme != nullptr) {
         light_theme->set_text_font(text_font);
     }
@@ -70,8 +81,6 @@ bool LvglDisplay::SetTextFont(std::shared_ptr<LvglFont> text_font) {
     if (current_theme_ != nullptr) {
         SetTheme(current_theme_);
     }
-    previous_light_font.reset();
-    previous_dark_font.reset();
     return true;
 }
 

@@ -81,7 +81,11 @@ public:
     };
 
 private:
+    // 应用动画与 LVGL 底层刷新均使用 16 ms 周期，理论刷新率约为 62.5 FPS。
+    static constexpr uint32_t kUiRefreshPeriodMs = 16;
+
     enum class WeatherState : uint8_t { kIdle, kLoading, kReady, kError };
+    enum class NetworkTimeState : uint8_t { kIdle, kLoading, kReady, kError };
 
     struct WeatherDay {
         std::array<char, 6> date{};
@@ -159,12 +163,15 @@ private:
     void EvaluateCalculator();
     void ShiftCalendarMonth(int delta);
     void RefreshCalendar();
+    void StartNetworkTimeSync();
+    void UpdateNetworkTimeSync();
     void SetStopwatchButtons();
     void SetCountdownButtons();
     void StartWeatherFetch();
     void UpdateWeather();
     void RenderWeather();
     static void WeatherTaskEntry(void* parameter);
+    static void NetworkTimeTaskEntry(void* parameter);
     static void WeatherRefreshCallback(lv_event_t* event);
 
     static void AppTimerCallback(lv_timer_t* timer);
@@ -185,6 +192,7 @@ private:
     static void SettingsItemCallback(lv_event_t* event);
     static void SettingsBackCallback(lv_event_t* event);
     static void SettingsActionCallback(lv_event_t* event);
+    static void SettingsNetworkTimeCallback(lv_event_t* event);
     static void SettingsAdjustCallback(lv_event_t* event);
     static void FileManagerItemCallback(lv_event_t* event);
     static void FileManagerBackCallback(lv_event_t* event);
@@ -210,6 +218,9 @@ private:
     lv_obj_t* clock_time_label_ = nullptr;
     lv_obj_t* clock_second_label_ = nullptr;
     lv_obj_t* clock_date_label_ = nullptr;
+    int clock_last_minute_of_day_ = -1;  // 最近一次绘制的分钟，避免 60 FPS 定时器重复重绘大号时间文字
+    int clock_last_second_ = -1;         // 最近一次绘制的秒数，仅在秒变化时刷新
+    int clock_last_date_key_ = -1;       // 年份与年内日组合键，仅在日期变化时刷新
     std::string clock_wallpaper_lvgl_path_;  // LVGL 持有路径指针期间由应用实例保存字符串
 
     std::vector<WatchStorage::Entry> novel_entries_;
@@ -258,6 +269,9 @@ private:
     std::array<lv_obj_t*, 5> settings_time_inputs_{};
     std::vector<WatchStorage::Entry> settings_wallpapers_;
     SettingsAction settings_action_ = SettingsAction::kNone;
+    std::atomic_bool network_time_running_{false};
+    std::atomic<NetworkTimeState> network_time_state_{NetworkTimeState::kIdle};
+    NetworkTimeState network_time_rendered_state_ = NetworkTimeState::kIdle;
 
     std::string file_manager_path_ = "/";
     std::vector<WatchStorage::Entry> file_manager_entries_;

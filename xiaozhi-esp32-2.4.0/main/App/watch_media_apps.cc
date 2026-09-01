@@ -257,7 +257,7 @@ void WatchApplications::ShowVideo(size_t index) {
     lv_obj_set_size(media_progress_, 340, 10);
     lv_obj_align(media_progress_, LV_ALIGN_BOTTOM_RIGHT, -14, -22);
     lv_bar_set_range(media_progress_, 0, 1000);
-    if (app_timer_ != nullptr) lv_timer_set_period(app_timer_, 33);
+    if (app_timer_ != nullptr) lv_timer_set_period(app_timer_, kUiRefreshPeriodMs);
     UpdateVideo();
 }
 
@@ -397,7 +397,8 @@ void WatchApplications::CleanupMedia() {
     media_play_button_label_ = media_progress_ = media_volume_ = nullptr;
     video_file_size_ = 0;
     video_playing_ = false;
-    if (app_timer_ != nullptr) lv_timer_set_period(app_timer_, 100);
+    // 离开视频后恢复普通应用约 60 FPS 的动态刷新，而不是旧版的 10 FPS。
+    if (app_timer_ != nullptr) lv_timer_set_period(app_timer_, kUiRefreshPeriodMs);
 }
 
 void WatchApplications::UpdateMedia() {

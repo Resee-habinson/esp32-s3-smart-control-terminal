@@ -1,9 +1,12 @@
 #include "watch_apps.h"
 
+#include "application.h"
+
 #include "boards/common/board.h"
 #include "boards/common/wifi_board.h"
 #include "display/display.h"
 #include "display/lvgl_display/lvgl_theme.h"
+#include "ota.h"
 #include "settings.h"
 
 #include <esp_log.h>
@@ -156,7 +159,7 @@ bool WatchApplications::Open(size_t index) {
             Close();
             return false;
     }
-    app_timer_ = lv_timer_create(AppTimerCallback, 100, this);
+    app_timer_ = lv_timer_create(AppTimerCallback, kUiRefreshPeriodMs, this);
     UpdateActiveApplication();
     lv_obj_move_foreground(overlay_);
     ESP_LOGI(kTag, "Opened watch app index=%u", static_cast<unsigned>(index));
@@ -180,6 +183,9 @@ void WatchApplications::Close() {
     active_app_ = AppId::kCount;
     clock_wallpaper_ = nullptr;
     clock_time_label_ = clock_second_label_ = clock_date_label_ = nullptr;
+    clock_last_minute_of_day_ = -1;
+    clock_last_second_ = -1;
+    clock_last_date_key_ = -1;
     clock_wallpaper_lvgl_path_.clear();
     novel_entries_.clear();
     novel_path_.clear();
@@ -204,6 +210,7 @@ void WatchApplications::Close() {
     settings_time_inputs_.fill(nullptr);
     settings_wallpapers_.clear();
     settings_action_ = SettingsAction::kNone;
+    network_time_rendered_state_ = NetworkTimeState::kIdle;
     weather_cancel_.store(true);
     weather_panel_ = weather_status_ = nullptr;
     weather_state_.store(WeatherState::kIdle);
@@ -229,6 +236,8 @@ void WatchApplications::UpdateActiveApplication() {
             UpdateMedia(); break;
         case AppId::kWeather:
             UpdateWeather(); break;
+        case AppId::kSettings:
+            UpdateNetworkTimeSync(); break;
         default: break;
     }
 }
@@ -271,10 +280,23 @@ void WatchApplications::UpdateClock() {
     std::tm local{};
     localtime_r(&now, &local);
     static const char* const kWeekdays[] = {"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"};
-    lv_label_set_text_fmt(clock_time_label_, "%02d:%02d", local.tm_hour, local.tm_min);
-    lv_label_set_text_fmt(clock_second_label_, "%02d", local.tm_sec);
-    lv_label_set_text_fmt(clock_date_label_, "%04d年%02d月%02d日  %s", local.tm_year + 1900,
-                          local.tm_mon + 1, local.tm_mday, kWeekdays[local.tm_wday]);
+
+    // 60 FPS 定时器只负责提供平滑动态刷新；文本实际变化时才通知 LVGL 重绘，避免大字体占满 LCD 总线。
+    const int minute_of_day = local.tm_hour * 60 + local.tm_min;
+    if (minute_of_day != clock_last_minute_of_day_) {
+        lv_label_set_text_fmt(clock_time_label_, "%02d:%02d", local.tm_hour, local.tm_min);
+        clock_last_minute_of_day_ = minute_of_day;
+    }
+    if (local.tm_sec != clock_last_second_) {
+        lv_label_set_text_fmt(clock_second_label_, "%02d", local.tm_sec);
+        clock_last_second_ = local.tm_sec;
+    }
+    const int date_key = (local.tm_year + 1900) * 512 + local.tm_yday;
+    if (date_key != clock_last_date_key_) {
+        lv_label_set_text_fmt(clock_date_label_, "%04d年%02d月%02d日  %s", local.tm_year + 1900,
+                              local.tm_mon + 1, local.tm_mday, kWeekdays[local.tm_wday]);
+        clock_last_date_key_ = date_key;
+    }
 }
 
 void WatchApplications::CreateGame() {
@@ -858,10 +880,16 @@ void WatchApplications::ShowSettingsDetail(const char* item_text) {
             lv_obj_set_style_text_font(settings_time_inputs_[index], GetWatchTextFont(), 0);
             lv_obj_set_style_text_font(lv_dropdown_get_list(settings_time_inputs_[index]), GetWatchTextFont(), 0);
         }
+        network_time_rendered_state_ = NetworkTimeState::kIdle;
+        if (!network_time_running_.load()) network_time_state_.store(NetworkTimeState::kIdle);
+        lv_obj_t* network_action = CreateTextButton(settings_detail_, "小智联网同步", lv_color_hex(0x2563eb), 180, 46);
+        lv_obj_align(network_action, LV_ALIGN_BOTTOM_LEFT, 42, -34);
+        lv_obj_add_event_cb(network_action, SettingsNetworkTimeCallback, LV_EVENT_CLICKED, this);
+
         settings_action_ = SettingsAction::kSetManualTime;
-        lv_obj_t* action = CreateTextButton(settings_detail_, "设置时间", lv_color_hex(0x16a34a), 160, 46);
-        lv_obj_align(action, LV_ALIGN_BOTTOM_MID, 0, -34);
-        lv_obj_add_event_cb(action, SettingsActionCallback, LV_EVENT_CLICKED, this);
+        lv_obj_t* manual_action = CreateTextButton(settings_detail_, "手动设置时间", lv_color_hex(0x16a34a), 180, 46);
+        lv_obj_align(manual_action, LV_ALIGN_BOTTOM_RIGHT, -42, -34);
+        lv_obj_add_event_cb(manual_action, SettingsActionCallback, LV_EVENT_CLICKED, this);
     } else if (std::strcmp(item_text, "WiFi") == 0) {
         lv_label_set_text(settings_status_label_, "WiFi 由小智系统统一管理\n点击下方按钮可进入配网模式");
         settings_action_ = SettingsAction::kWifiConfig;
@@ -1018,6 +1046,10 @@ void WatchApplications::SettingsActionCallback(lv_event_t* event) {
             break;
         }
         case SettingsAction::kSetManualTime: {
+            if (self->network_time_running_.load()) {
+                lv_label_set_text(self->settings_status_label_, "正在进行小智联网校时，请稍候");
+                break;
+            }
             for (lv_obj_t* input : self->settings_time_inputs_) {
                 if (input == nullptr) return;
             }
@@ -1076,6 +1108,93 @@ void WatchApplications::SettingsActionCallback(lv_event_t* event) {
         }
         case SettingsAction::kNone:
             break;
+    }
+}
+
+/**
+ * 函    数：响应“小智联网同步”按钮
+ * 参    数：event  LVGL 点击事件，用户数据为 WatchApplications 实例
+ * 返 回 值：无
+ * 注意事项：这里只启动后台任务，不在 LVGL 线程中执行 HTTPS 请求
+ */
+void WatchApplications::SettingsNetworkTimeCallback(lv_event_t* event) {
+    auto* self = static_cast<WatchApplications*>(lv_event_get_user_data(event));
+    if (self != nullptr) self->StartNetworkTimeSync();
+}
+
+/**
+ * 函    数：启动小智服务器时间同步任务
+ * 参    数：无
+ * 返 回 值：无
+ * 注意事项：仅在小智进入空闲态后允许同步，避免与启动激活任务并发访问 OTA 服务
+ */
+void WatchApplications::StartNetworkTimeSync() {
+    if (settings_status_label_ == nullptr || settings_time_inputs_[0] == nullptr) return;
+    if (Application::GetInstance().GetDeviceState() != kDeviceStateIdle) {
+        lv_label_set_text(settings_status_label_, "小智尚未完成联网或当前正忙，请稍后再试");
+        return;
+    }
+    bool expected = false;
+    if (!network_time_running_.compare_exchange_strong(expected, true)) {
+        lv_label_set_text(settings_status_label_, "正在进行小智联网校时，请稍候");
+        return;
+    }
+    network_time_state_.store(NetworkTimeState::kLoading);
+    network_time_rendered_state_ = NetworkTimeState::kIdle;
+    lv_label_set_text(settings_status_label_, "正在连接小智服务器同步时间…");
+    if (xTaskCreatePinnedToCore(NetworkTimeTaskEntry, "watch_time_sync", 8192, this, 3, nullptr, 0) != pdPASS) {
+        network_time_running_.store(false);
+        network_time_state_.store(NetworkTimeState::kError);
+    }
+}
+
+/**
+ * 函    数：通过小智 OTA 服务响应中的 server_time 校准系统时间
+ * 参    数：parameter  WatchApplications 实例指针
+ * 返 回 值：无
+ * 注意事项：运行在后台任务；不得直接操作 LVGL 对象
+ */
+void WatchApplications::NetworkTimeTaskEntry(void* parameter) {
+    auto* self = static_cast<WatchApplications*>(parameter);
+    if (self != nullptr) {
+        Ota ota;
+        const esp_err_t error = ota.CheckVersion();
+        const bool success = error == ESP_OK && ota.HasServerTime();
+        self->network_time_state_.store(success ? NetworkTimeState::kReady : NetworkTimeState::kError);
+        self->network_time_running_.store(false);
+        ESP_LOGI(kTag, "XiaoZhi network time sync finished: %s", success ? "ok" : "failed");
+    }
+    vTaskDelete(nullptr);
+}
+
+/**
+ * 函    数：在 LVGL 任务中刷新联网校时结果
+ * 参    数：无
+ * 返 回 值：无
+ * 注意事项：后台任务仅写原子状态，本函数是唯一更新设置页面控件的位置
+ */
+void WatchApplications::UpdateNetworkTimeSync() {
+    if (settings_status_label_ == nullptr || settings_time_inputs_[0] == nullptr) return;
+    const NetworkTimeState state = network_time_state_.load();
+    if (state == network_time_rendered_state_) return;
+    network_time_rendered_state_ = state;
+    if (state == NetworkTimeState::kReady) {
+        const std::time_t now = std::time(nullptr);
+        std::tm local{};
+        localtime_r(&now, &local);
+        lv_label_set_text_fmt(settings_status_label_, "小智联网同步成功\n当前：%04d-%02d-%02d  %02d:%02d:%02d",
+                              local.tm_year + 1900, local.tm_mon + 1, local.tm_mday,
+                              local.tm_hour, local.tm_min, local.tm_sec);
+        const int selected[] = {
+            std::clamp(local.tm_year + 1900, 2020, 2030) - 2020,
+            std::clamp(local.tm_mon, 0, 11), std::clamp(local.tm_mday - 1, 0, 30),
+            std::clamp(local.tm_hour, 0, 23), std::clamp(local.tm_min, 0, 59),
+        };
+        for (size_t index = 0; index < settings_time_inputs_.size(); ++index) {
+            lv_dropdown_set_selected(settings_time_inputs_[index], selected[index]);
+        }
+    } else if (state == NetworkTimeState::kError) {
+        lv_label_set_text(settings_status_label_, "小智联网同步失败\n请检查网络后重试");
     }
 }
 
