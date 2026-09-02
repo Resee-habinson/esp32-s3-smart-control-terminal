@@ -97,7 +97,7 @@ void WatchApplications::RefreshNovelList() {
               [](const auto& left, const auto& right) { return left.name < right.name; });
 
     novel_list_ = lv_obj_create(overlay_);
-    lv_obj_set_size(novel_list_, 448, 260);
+    lv_obj_set_size(novel_list_, 448, 228);
     lv_obj_align(novel_list_, LV_ALIGN_BOTTOM_MID, 0, -8);
     lv_obj_set_style_bg_color(novel_list_, lv_color_hex(0x111827), 0);
     lv_obj_set_style_border_width(novel_list_, 0, 0);
@@ -137,7 +137,7 @@ void WatchApplications::OpenNovel(size_t index) {
 
     lv_obj_clean(overlay_);
     lv_obj_t* list_button = CreateStorageButton(overlay_, "目录", 72, 38, lv_color_hex(0x374151));
-    lv_obj_set_pos(list_button, 12, 8);
+    lv_obj_set_pos(list_button, 12, 34);
     lv_obj_add_event_cb(list_button, NovelListCallback, LV_EVENT_CLICKED, this);
 
     lv_obj_t* title = CreatePageTitle(overlay_, novel_entries_[index].name.c_str());
@@ -147,11 +147,11 @@ void WatchApplications::OpenNovel(size_t index) {
 
     novel_progress_label_ = lv_label_create(overlay_);
     lv_obj_set_style_text_color(novel_progress_label_, lv_color_hex(0x9ca3af), 0);
-    lv_obj_align(novel_progress_label_, LV_ALIGN_TOP_RIGHT, -16, 18);
+    lv_obj_align(novel_progress_label_, LV_ALIGN_TOP_RIGHT, -16, 42);
 
     lv_obj_t* content = lv_obj_create(overlay_);
-    lv_obj_set_size(content, 452, 222);
-    lv_obj_align(content, LV_ALIGN_CENTER, 0, 4);
+    lv_obj_set_size(content, 452, 188);
+    lv_obj_set_pos(content, 14, 80);
     lv_obj_set_style_bg_color(content, lv_color_hex(0xf6f0df), 0);
     lv_obj_set_style_border_width(content, 0, 0);
     lv_obj_set_style_radius(content, 10, 0);
@@ -239,7 +239,7 @@ void WatchApplications::CreateFileManager() {
     file_delete_armed_ = false;
 
     lv_obj_t* back = CreateStorageButton(overlay_, "返回", 72, 38, lv_color_hex(0x374151));
-    lv_obj_set_pos(back, 12, 8);
+    lv_obj_set_pos(back, 12, 34);
     lv_obj_add_event_cb(back, FileManagerBackCallback, LV_EVENT_CLICKED, this);
     file_manager_title_ = CreatePageTitle(overlay_, "/");
     lv_obj_set_width(file_manager_title_, 350);
@@ -247,7 +247,7 @@ void WatchApplications::CreateFileManager() {
     lv_obj_set_style_text_align(file_manager_title_, LV_TEXT_ALIGN_CENTER, 0);
 
     file_manager_list_ = lv_obj_create(overlay_);
-    lv_obj_set_size(file_manager_list_, 452, 260);
+    lv_obj_set_size(file_manager_list_, 452, 228);
     lv_obj_align(file_manager_list_, LV_ALIGN_BOTTOM_MID, 0, -6);
     lv_obj_set_style_bg_color(file_manager_list_, lv_color_hex(0x111827), 0);
     lv_obj_set_style_border_width(file_manager_list_, 0, 0);

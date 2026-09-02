@@ -1,4 +1,5 @@
 #include "watch_apps.h"
+#include "watch_countdown_service.h"
 
 #include "application.h"
 
@@ -118,6 +119,8 @@ bool WatchApplications::Initialize(lv_obj_t* watch_screen) {
     watch_screen_ = watch_screen;
     /* 独立 Screen 不会自动继承小智主界面的主题，必须显式绑定中文字库。 */
     lv_obj_set_style_text_font(watch_screen_, GetWatchTextFont(), 0);
+    LoadWeatherCache();
+    /* 此时 Application 尚未启动 Wi-Fi/LwIP，不能在这里发起 DNS 或 HTTPS 请求。 */
     return true;
 }
 
@@ -211,9 +214,7 @@ void WatchApplications::Close() {
     settings_wallpapers_.clear();
     settings_action_ = SettingsAction::kNone;
     network_time_rendered_state_ = NetworkTimeState::kIdle;
-    weather_cancel_.store(true);
     weather_panel_ = weather_status_ = nullptr;
-    weather_state_.store(WeatherState::kIdle);
     weather_rendered_state_ = WeatherState::kIdle;
 }
 
@@ -308,10 +309,11 @@ void WatchApplications::CreateGame() {
     lv_label_set_text(title, "2048");
     lv_obj_set_style_text_font(title, &lv_font_montserrat_48, 0);
     lv_obj_set_style_text_color(title, lv_color_hex(0x776e65), 0);
-    lv_obj_set_pos(title, 24, 10);
+    /* 顶部中间区域不与左侧时间、右侧电量状态重叠。 */
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 6);
     game_score_label_ = lv_label_create(overlay_);
     lv_obj_set_style_text_color(game_score_label_, lv_color_hex(0x776e65), 0);
-    lv_obj_align(game_score_label_, LV_ALIGN_TOP_RIGHT, -24, 20);
+    lv_obj_align(game_score_label_, LV_ALIGN_TOP_RIGHT, -24, 38);
 
     lv_obj_t* board = lv_obj_create(overlay_);
     lv_obj_set_size(board, kBoardSize, kBoardSize);
@@ -428,8 +430,8 @@ void WatchApplications::GameTouchCallback(lv_event_t* event) {
 void WatchApplications::CreateCalculator() {
     calculator_expression_.clear();
     calculator_textarea_ = lv_textarea_create(overlay_);
-    lv_obj_set_size(calculator_textarea_, 456, 68);
-    lv_obj_align(calculator_textarea_, LV_ALIGN_TOP_MID, 0, 8);
+    lv_obj_set_size(calculator_textarea_, 456, 50);
+    lv_obj_align(calculator_textarea_, LV_ALIGN_TOP_MID, 0, 34);
     lv_textarea_set_one_line(calculator_textarea_, true);
     lv_obj_set_style_bg_color(calculator_textarea_, lv_color_black(), 0);
     lv_obj_set_style_text_color(calculator_textarea_, lv_color_white(), 0);
@@ -450,8 +452,8 @@ void WatchApplications::CreateCalculator() {
             const lv_color_t color = operation ? lv_color_hex(0xf59e0b) :
                                      (row == 0 ? lv_color_hex(0x505050) : lv_color_hex(0x2d2d2d));
             const int width = (row == 4 && col == 2) ? 220 : 106;
-            lv_obj_t* button = CreateTextButton(overlay_, token, color, width, 40);
-            lv_obj_set_pos(button, 12 + col * 114, 82 + row * 46);
+            lv_obj_t* button = CreateTextButton(overlay_, token, color, width, 38);
+            lv_obj_set_pos(button, 12 + col * 114, 92 + row * 43);
             lv_obj_set_user_data(button, const_cast<char*>(token));
             lv_obj_add_event_cb(button, CalculatorButtonCallback, LV_EVENT_CLICKED, this);
         }
@@ -686,24 +688,22 @@ void WatchApplications::StopwatchResetCallback(lv_event_t* event) {
 }
 
 void WatchApplications::UpdateCountdown() {
-    if (countdown_ui_.time_label == nullptr || countdown_state_ == CountdownState::kStopped) return;
-    int64_t remaining = countdown_remaining_us_;
-    if (countdown_state_ == CountdownState::kRunning) remaining = countdown_deadline_us_ - esp_timer_get_time();
-    if (remaining <= 0) {
-        countdown_state_ = CountdownState::kStopped;
-        countdown_remaining_us_ = countdown_total_us_ = 0;
+    if (countdown_ui_.time_label == nullptr) return;
+    const auto snapshot = WatchCountdownService::Instance().GetSnapshot();
+    if (snapshot.state == WatchCountdownService::State::kStopped) {
         SetCountdownButtons();
         return;
     }
-    countdown_remaining_us_ = remaining;
+    const int64_t remaining = snapshot.remaining_us;
     const int total_seconds = static_cast<int>((remaining + kUsPerSecond - 1) / kUsPerSecond);
     lv_label_set_text_fmt(countdown_ui_.time_label, "%02d:%02d", total_seconds / 60, total_seconds % 60);
-    const int progress = countdown_total_us_ > 0 ? static_cast<int>(remaining * 100 / countdown_total_us_) : 0;
+    const int progress = snapshot.total_us > 0 ? static_cast<int>(remaining * 100 / snapshot.total_us) : 0;
     lv_arc_set_value(countdown_ui_.arc, std::clamp(progress, 0, 100));
 }
 
 void WatchApplications::SetCountdownButtons() {
-    const bool stopped = countdown_state_ == CountdownState::kStopped;
+    const auto snapshot = WatchCountdownService::Instance().GetSnapshot();
+    const bool stopped = snapshot.state == WatchCountdownService::State::kStopped;
     SetHidden(countdown_ui_.minute_roller, !stopped);
     SetHidden(countdown_ui_.second_roller, !stopped);
     SetHidden(countdown_ui_.colon_label, !stopped);
@@ -714,7 +714,7 @@ void WatchApplications::SetCountdownButtons() {
     SetHidden(countdown_ui_.reset_button, stopped);
     if (countdown_ui_.pause_button != nullptr)
         lv_label_set_text(lv_obj_get_child(countdown_ui_.pause_button, 0),
-                          countdown_state_ == CountdownState::kPaused ? LV_SYMBOL_PLAY : LV_SYMBOL_PAUSE);
+                          snapshot.state == WatchCountdownService::State::kPaused ? LV_SYMBOL_PLAY : LV_SYMBOL_PAUSE);
 }
 
 void WatchApplications::CountdownStartCallback(lv_event_t* event) {
@@ -723,38 +723,29 @@ void WatchApplications::CountdownStartCallback(lv_event_t* event) {
     const int seconds = lv_roller_get_selected(self->countdown_ui_.minute_roller) * 60 +
                         lv_roller_get_selected(self->countdown_ui_.second_roller);
     if (seconds <= 0) return;
-    self->countdown_total_us_ = static_cast<int64_t>(seconds) * kUsPerSecond;
-    self->countdown_remaining_us_ = self->countdown_total_us_;
-    self->countdown_deadline_us_ = esp_timer_get_time() + self->countdown_total_us_;
-    self->countdown_state_ = CountdownState::kRunning;
+    WatchCountdownService::Instance().Start(static_cast<int64_t>(seconds) * kUsPerSecond);
     self->SetCountdownButtons();
+    self->UpdateCountdown();
 }
 
 void WatchApplications::CountdownPauseCallback(lv_event_t* event) {
     auto* self = static_cast<WatchApplications*>(lv_event_get_user_data(event));
     if (self == nullptr) return;
-    if (self->countdown_state_ == CountdownState::kRunning) {
-        self->countdown_remaining_us_ = std::max<int64_t>(0, self->countdown_deadline_us_ - esp_timer_get_time());
-        self->countdown_state_ = CountdownState::kPaused;
-    } else if (self->countdown_state_ == CountdownState::kPaused) {
-        self->countdown_deadline_us_ = esp_timer_get_time() + self->countdown_remaining_us_;
-        self->countdown_state_ = CountdownState::kRunning;
-    }
+    WatchCountdownService::Instance().TogglePause();
     self->SetCountdownButtons();
 }
 
 void WatchApplications::CountdownResetCallback(lv_event_t* event) {
     auto* self = static_cast<WatchApplications*>(lv_event_get_user_data(event));
     if (self == nullptr) return;
-    self->countdown_state_ = CountdownState::kStopped;
-    self->countdown_remaining_us_ = self->countdown_total_us_ = 0;
+    WatchCountdownService::Instance().Reset();
     self->SetCountdownButtons();
 }
 void WatchApplications::CreateCalendar() {
     /* 复用原工程的 LVGL 日历控件，仅针对 480×320 放大可视区域。 */
     lv_obj_t* calendar = lv_calendar_create(overlay_);
-    lv_obj_set_size(calendar, 430, 294);
-    lv_obj_align(calendar, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_size(calendar, 430, 272);
+    lv_obj_align(calendar, LV_ALIGN_BOTTOM_MID, 0, -8);
     lv_obj_set_style_text_font(calendar, GetWatchTextFont(), 0);
 
     const std::time_t now = std::time(nullptr);
@@ -807,8 +798,8 @@ void WatchApplications::CreateSettings() {
         "时间同步", "WiFi", "壁纸", "电池校准", "自动轮播间隔", "重新扫描SD卡", "天气设置",
     };
     settings_list_ = lv_list_create(overlay_);
-    lv_obj_set_size(settings_list_, 430, 294);
-    lv_obj_center(settings_list_);
+    lv_obj_set_size(settings_list_, 430, 272);
+    lv_obj_align(settings_list_, LV_ALIGN_BOTTOM_MID, 0, -8);
     lv_obj_set_style_text_font(settings_list_, GetWatchTextFont(), 0);
     for (const char* item_text : kItems) {
         lv_obj_t* button = lv_list_add_button(settings_list_, nullptr, item_text);
@@ -834,7 +825,7 @@ void WatchApplications::ShowSettingsDetail(const char* item_text) {
     settings_time_inputs_.fill(nullptr);
 
     lv_obj_t* back = CreateTextButton(settings_detail_, LV_SYMBOL_LEFT, lv_color_hex(0x303030), 54, 42);
-    lv_obj_set_pos(back, 14, 12);
+    lv_obj_set_pos(back, 14, 34);
     lv_obj_add_event_cb(back, SettingsBackCallback, LV_EVENT_CLICKED, this);
     lv_obj_t* title = lv_label_create(settings_detail_);
     lv_label_set_text(title, item_text);

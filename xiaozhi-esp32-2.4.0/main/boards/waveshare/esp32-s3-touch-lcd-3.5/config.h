@@ -32,9 +32,9 @@
 #define DISPLAY_RST_PIN         GPIO_NUM_NC
 /* 与 Waveshare 官方 ESP-IDF 例程保持一致，80 MHz 可将像素传输带宽提高约 33%。 */
 #define DISPLAY_SPI_PIXEL_CLOCK_HZ (80 * 1000 * 1000)
-/* 40 行内部 DMA 单缓冲保持原有内存占用，并将菜单刷新批次由约 7 段降至约 4 段。 */
+/* 40 行内部 DMA 双缓冲允许 LVGL 绘制与 80 MHz SPI 传输重叠，降低滑动等待时间。 */
 #define DISPLAY_LVGL_BUFFER_HEIGHT 40
-#define DISPLAY_LVGL_DOUBLE_BUFFER false
+#define DISPLAY_LVGL_DOUBLE_BUFFER true
 
 #define DISPLAY_WIDTH           480
 #define DISPLAY_HEIGHT          320

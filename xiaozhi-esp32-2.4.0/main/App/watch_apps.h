@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -48,6 +49,19 @@ public:
     /** 函数：查询是否有应用正在显示；参数：无；返回值：true 表示应用覆盖层存在 */
     bool IsOpen() const { return overlay_ != nullptr; }
 
+    struct WeatherSummary {
+        std::array<char, 6> date{};
+        int16_t maximum_tenths = 0;
+        int16_t minimum_tenths = 0;
+        int16_t code = 0;
+    };
+
+    /** 函数：读取主页使用的当日天气快照；参数：summary 输出对象；返回值：是否存在缓存或实时数据 */
+    bool GetCurrentWeather(WeatherSummary* summary);
+
+    /** 函数：在缓存过期或上次失败后异步刷新天气；参数：无；返回值：无；仅由 LVGL 任务调用 */
+    void RefreshWeatherIfStale();
+
 public:
     enum class AppId : uint8_t {
         kClock = 0,
@@ -67,7 +81,6 @@ public:
     };
 
     enum class StopwatchState : uint8_t { kStopped, kRunning, kPaused };
-    enum class CountdownState : uint8_t { kStopped, kRunning, kPaused };
     enum class MediaMode : uint8_t { kNone, kList, kPicture, kVideo, kMusic, kComic };
     enum class MusicState : uint8_t { kIdle, kLoading, kPlaying, kPaused, kFinished, kError };
     enum class SettingsAction : uint8_t {
@@ -147,10 +160,14 @@ private:
     void UpdateVideo();
     void UpdateMusic();
     void UpdateComic();
-    bool ReadNextJpegFrame(FILE* file, std::vector<uint8_t>* frame, size_t maximum_size);
+    bool ReadNextJpegFrame(FILE* file, std::vector<uint8_t>* frame, size_t maximum_size,
+                           const std::atomic_bool* stop = nullptr);
     bool LoadComicFrame(uint32_t frame_index);
     void StartMusicTask();
     void StopMusicTask();
+    void StartVideoTask();
+    void StopVideoTask();
+    static void VideoTaskEntry(void* parameter);
     static void MusicTaskEntry(void* parameter);
     void UpdateActiveApplication();
     void UpdateClock();
@@ -168,6 +185,8 @@ private:
     void SetStopwatchButtons();
     void SetCountdownButtons();
     void StartWeatherFetch();
+    void LoadWeatherCache();
+    void SaveWeatherCache();
     void UpdateWeather();
     void RenderWeather();
     static void WeatherTaskEntry(void* parameter);
@@ -250,10 +269,6 @@ private:
     int64_t stopwatch_elapsed_us_ = 0;
 
     CountdownUi countdown_ui_{};
-    CountdownState countdown_state_ = CountdownState::kStopped;
-    int64_t countdown_deadline_us_ = 0;
-    int64_t countdown_remaining_us_ = 0;
-    int64_t countdown_total_us_ = 0;
 
     lv_obj_t* calendar_title_label_ = nullptr;
     lv_obj_t* calendar_days_container_ = nullptr;
@@ -299,9 +314,22 @@ private:
     bool picture_carousel_ = false;
     int64_t picture_next_us_ = 0;
 
-    FILE* video_file_ = nullptr;
-    size_t video_file_size_ = 0;
+    struct VideoFrameSlot {
+        std::vector<uint8_t> data;
+        std::atomic<uint8_t> state{0};  // 0=空闲，1=待显示，2=LVGL 使用，3=后台任务填充
+        uint32_t generation = 0;
+    };
+    std::array<VideoFrameSlot, 3> video_frames_{};
+    std::string video_task_path_;
+    std::atomic<TaskHandle_t> video_task_{nullptr};
+    std::atomic_bool video_stop_{false};
+    std::atomic_bool video_paused_{false};
+    std::atomic_bool video_error_{false};
+    std::atomic<uint32_t> video_progress_permille_{0};
+    std::atomic<size_t> video_file_size_{0};
     bool video_playing_ = false;
+    int video_display_slot_ = -1;
+    lv_image_dsc_t video_image_{};
     std::vector<uint8_t> encoded_frame_;
     lv_image_dsc_t encoded_image_{};
 
@@ -325,6 +353,8 @@ private:
     std::atomic_bool weather_cancel_{false};
     WeatherState weather_rendered_state_ = WeatherState::kIdle;
     size_t weather_day_count_ = 0;
+    std::mutex weather_data_mutex_;
+    int64_t weather_last_attempt_us_ = 0;
     lv_obj_t* weather_panel_ = nullptr;
     lv_obj_t* weather_status_ = nullptr;
 };

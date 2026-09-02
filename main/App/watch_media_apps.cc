@@ -111,7 +111,7 @@ void WatchApplications::CreateMediaList(AppId id) {
     media_root_ = MediaRoot(id);
 
     lv_obj_t* back = CreateMediaButton(overlay_, "返回", 76, 38, lv_color_hex(0x374151));
-    lv_obj_set_pos(back, 12, 10);
+    lv_obj_set_pos(back, 12, 34);
     lv_obj_add_event_cb(back, MediaBackCallback, LV_EVENT_CLICKED, this);
 
     media_title_ = lv_label_create(overlay_);
@@ -121,8 +121,8 @@ void WatchApplications::CreateMediaList(AppId id) {
     lv_obj_align(media_title_, LV_ALIGN_TOP_MID, 0, 17);
 
     media_list_ = lv_obj_create(overlay_);
-    lv_obj_set_size(media_list_, 456, 252);
-    lv_obj_set_pos(media_list_, 12, 58);
+    lv_obj_set_size(media_list_, 456, 228);
+    lv_obj_set_pos(media_list_, 12, 82);
     lv_obj_set_flex_flow(media_list_, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_style_pad_all(media_list_, 8, 0);
     lv_obj_set_style_pad_row(media_list_, 7, 0);
@@ -184,7 +184,7 @@ void WatchApplications::ShowPicture(size_t index) {
     media_lvgl_path_ = "A:" + vfs_path;
 
     lv_obj_t* back = CreateMediaButton(overlay_, "目录", 72, 36, lv_color_hex(0x374151));
-    lv_obj_set_pos(back, 10, 8);
+    lv_obj_set_pos(back, 10, 34);
     lv_obj_add_event_cb(back, MediaBackCallback, LV_EVENT_CLICKED, this);
     media_title_ = lv_label_create(overlay_);
     lv_label_set_text(media_title_, media_entries_[index].name.c_str());
@@ -227,16 +227,15 @@ void WatchApplications::ShowVideo(size_t index) {
     media_path_ = media_root_ + "/" + media_entries_[index].name;
     std::string vfs_path;
     if (WatchStorage::Instance().GetVfsPath(media_path_, &vfs_path) != ESP_OK) return;
-    video_file_ = std::fopen(vfs_path.c_str(), "rb");
-    if (video_file_ == nullptr) return;
+    video_task_path_ = vfs_path;
     struct stat info = {};
-    if (stat(vfs_path.c_str(), &info) == 0) video_file_size_ = static_cast<size_t>(info.st_size);
+    if (stat(vfs_path.c_str(), &info) == 0) video_file_size_.store(static_cast<size_t>(info.st_size));
 
     lv_obj_clean(overlay_);
     media_mode_ = MediaMode::kVideo;
     video_playing_ = true;
     lv_obj_t* back = CreateMediaButton(overlay_, "目录", 72, 36, lv_color_hex(0x374151));
-    lv_obj_set_pos(back, 10, 8);
+    lv_obj_set_pos(back, 10, 34);
     lv_obj_add_event_cb(back, MediaBackCallback, LV_EVENT_CLICKED, this);
     media_title_ = lv_label_create(overlay_);
     lv_label_set_text(media_title_, media_entries_[index].name.c_str());
@@ -258,7 +257,7 @@ void WatchApplications::ShowVideo(size_t index) {
     lv_obj_align(media_progress_, LV_ALIGN_BOTTOM_RIGHT, -14, -22);
     lv_bar_set_range(media_progress_, 0, 1000);
     if (app_timer_ != nullptr) lv_timer_set_period(app_timer_, kUiRefreshPeriodMs);
-    UpdateVideo();
+    StartVideoTask();
 }
 
 void WatchApplications::ShowMusic(size_t index) {
@@ -270,7 +269,7 @@ void WatchApplications::ShowMusic(size_t index) {
     if (WatchStorage::Instance().GetVfsPath(media_path_, &music_task_path_) != ESP_OK) return;
 
     lv_obj_t* back = CreateMediaButton(overlay_, "目录", 72, 36, lv_color_hex(0x374151));
-    lv_obj_set_pos(back, 10, 8);
+    lv_obj_set_pos(back, 10, 34);
     lv_obj_add_event_cb(back, MediaBackCallback, LV_EVENT_CLICKED, this);
     media_title_ = lv_label_create(overlay_);
     lv_label_set_text(media_title_, media_entries_[index].name.c_str());
@@ -346,7 +345,7 @@ void WatchApplications::ShowComic(size_t index) {
     lv_obj_clean(overlay_);
     media_mode_ = MediaMode::kComic;
     lv_obj_t* back = CreateMediaButton(overlay_, "目录", 72, 36, lv_color_hex(0x374151));
-    lv_obj_set_pos(back, 10, 8);
+    lv_obj_set_pos(back, 10, 34);
     lv_obj_add_event_cb(back, MediaBackCallback, LV_EVENT_CLICKED, this);
     media_title_ = lv_label_create(overlay_);
     lv_obj_set_width(media_title_, 300);
@@ -373,16 +372,14 @@ void WatchApplications::ReturnToMediaList() {
 
 void WatchApplications::CleanupMedia() {
     picture_carousel_ = false;
-    if (video_file_ != nullptr) {
-        std::fclose(video_file_);
-        video_file_ = nullptr;
-    }
+    StopVideoTask();
     if (comic_file_ != nullptr) {
         WatchStorage::Instance().SaveReadingOffset(media_path_, comic_frame_);
         std::fclose(comic_file_);
         comic_file_ = nullptr;
     }
     StopMusicTask();
+    if (video_image_.data != nullptr) lv_image_cache_drop(&video_image_);
     if (encoded_image_.data != nullptr) lv_image_cache_drop(&encoded_image_);
     encoded_frame_.clear();
     encoded_frame_.shrink_to_fit();
@@ -395,8 +392,11 @@ void WatchApplications::CleanupMedia() {
     media_mode_ = MediaMode::kNone;
     media_list_ = media_image_ = media_title_ = media_status_ = nullptr;
     media_play_button_label_ = media_progress_ = media_volume_ = nullptr;
-    video_file_size_ = 0;
+    video_file_size_.store(0);
     video_playing_ = false;
+    video_task_path_.clear();
+    video_image_ = {};
+    video_display_slot_ = -1;
     // 离开视频后恢复普通应用约 60 FPS 的动态刷新，而不是旧版的 10 FPS。
     if (app_timer_ != nullptr) lv_timer_set_period(app_timer_, kUiRefreshPeriodMs);
 }
@@ -416,13 +416,18 @@ void WatchApplications::UpdatePicture() {
     ShowPicture((media_index_ + 1U) % media_entries_.size());
 }
 
-bool WatchApplications::ReadNextJpegFrame(FILE* file, std::vector<uint8_t>* frame, size_t maximum_size) {
+bool WatchApplications::ReadNextJpegFrame(FILE* file, std::vector<uint8_t>* frame, size_t maximum_size,
+                                           const std::atomic_bool* stop) {
     if (file == nullptr || frame == nullptr) return false;
     frame->clear();
     int previous = -1;
     int value = 0;
     bool started = false;
     while ((value = std::fgetc(file)) != EOF) {
+        if (stop != nullptr && (frame->size() & 0x0fffU) == 0U && stop->load()) {
+            frame->clear();
+            return false;
+        }
         if (!started) {
             if (previous == 0xff && value == 0xd8) {
                 frame->push_back(0xff);
@@ -445,27 +450,141 @@ bool WatchApplications::ReadNextJpegFrame(FILE* file, std::vector<uint8_t>* fram
 }
 
 void WatchApplications::UpdateVideo() {
-    if (!video_playing_ || video_file_ == nullptr || media_image_ == nullptr) return;
-    if (encoded_image_.data != nullptr) lv_image_cache_drop(&encoded_image_);
-    if (!ReadNextJpegFrame(video_file_, &encoded_frame_, kMaximumJpegFrame)) {
-        std::rewind(video_file_);
-        if (!ReadNextJpegFrame(video_file_, &encoded_frame_, kMaximumJpegFrame)) {
-            video_playing_ = false;
-            SetButtonText(media_play_button_label_, "播放");
-            return;
+    if (media_image_ == nullptr) return;
+    int selected = -1;
+    uint32_t newest_generation = 0;
+    for (size_t index = 0; index < video_frames_.size(); ++index) {
+        if (video_frames_[index].state.load() == 1 &&
+            (selected < 0 || video_frames_[index].generation > newest_generation)) {
+            selected = static_cast<int>(index);
+            newest_generation = video_frames_[index].generation;
         }
     }
-    encoded_image_ = {};
-    encoded_image_.header.cf = LV_COLOR_FORMAT_RAW;
-    encoded_image_.data_size = static_cast<uint32_t>(encoded_frame_.size());
-    encoded_image_.data = encoded_frame_.data();
-    lv_image_set_src(media_image_, &encoded_image_);
-    lv_obj_invalidate(media_image_);
-    if (media_progress_ != nullptr && video_file_size_ != 0) {
-        const long position = std::ftell(video_file_);
-        const int progress = position < 0 ? 0 : static_cast<int>(1000ULL * position / video_file_size_);
-        lv_bar_set_value(media_progress_, progress, LV_ANIM_OFF);
+    if (selected >= 0) {
+        uint8_t expected = 1;
+        if (video_frames_[selected].state.compare_exchange_strong(expected, 2)) {
+            if (video_image_.data != nullptr) lv_image_cache_drop(&video_image_);
+            if (video_display_slot_ >= 0) video_frames_[video_display_slot_].state.store(0);
+            for (size_t index = 0; index < video_frames_.size(); ++index) {
+                if (static_cast<int>(index) != selected && video_frames_[index].state.load() == 1) {
+                    video_frames_[index].state.store(0);  // 丢弃已经过时的帧，优先保证触摸和画面低延迟
+                }
+            }
+            video_display_slot_ = selected;
+            video_image_ = {};
+            video_image_.header.cf = LV_COLOR_FORMAT_RAW;
+            video_image_.data_size = static_cast<uint32_t>(video_frames_[selected].data.size());
+            video_image_.data = video_frames_[selected].data.data();
+            lv_image_set_src(media_image_, &video_image_);
+            lv_obj_invalidate(media_image_);
+        }
     }
+    if (media_progress_ != nullptr) lv_bar_set_value(media_progress_, video_progress_permille_.load(), LV_ANIM_OFF);
+    if (video_error_.load()) {
+        video_playing_ = false;
+        SetButtonText(media_play_button_label_, "播放失败");
+    }
+}
+
+/** 函数：启动 MJPEG 预读任务；参数：无；返回值：无；任务只访问文件和帧槽，不调用 LVGL */
+void WatchApplications::StartVideoTask() {
+    StopVideoTask();
+    if (video_task_.load() != nullptr) {
+        video_error_.store(true);
+        return;
+    }
+    if (video_task_path_.empty()) return;
+    for (auto& slot : video_frames_) {
+        slot.state.store(0);
+        slot.generation = 0;
+        slot.data.clear();
+        slot.data.reserve(64U * 1024U);
+    }
+    video_stop_.store(false);
+    video_paused_.store(false);
+    video_error_.store(false);
+    video_progress_permille_.store(0);
+    video_display_slot_ = -1;
+    TaskHandle_t handle = nullptr;
+    if (xTaskCreatePinnedToCore(VideoTaskEntry, "watch_mjpeg", 6144, this, 3, &handle, 0) != pdPASS) {
+        video_error_.store(true);
+        return;
+    }
+    video_task_.store(handle);
+}
+
+/** 函数：请求 MJPEG 任务退出并等待释放文件；参数：无；返回值：无 */
+void WatchApplications::StopVideoTask() {
+    TaskHandle_t handle = video_task_.load();
+    if (handle == nullptr) return;
+    video_stop_.store(true);
+    for (int retry = 0; retry < 200 && video_task_.load() != nullptr; ++retry) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+    if (video_task_.load() != nullptr) {
+        ESP_LOGE(kTag, "MJPEG task did not stop within 2 seconds");
+    }
+}
+
+/**
+ * 函    数：MJPEG 后台预读任务
+ * 参    数：parameter WatchApplications 实例
+ * 返 回 值：无
+ * 注意事项：任务把完整 JPEG 发布到三槽有界缓冲；槽满时等待，绝不修改 LVGL 对象。
+ */
+void WatchApplications::VideoTaskEntry(void* parameter) {
+    auto* self = static_cast<WatchApplications*>(parameter);
+    while (self->video_task_.load() == nullptr && !self->video_stop_.load()) {
+        vTaskDelay(1);  // 等待创建方发布任务句柄，避免极短文件导致退出状态被覆盖
+    }
+    FILE* file = std::fopen(self->video_task_path_.c_str(), "rb");
+    if (file == nullptr) {
+        self->video_error_.store(true);
+        self->video_task_.store(nullptr);
+        vTaskDelete(nullptr);
+        return;
+    }
+    uint32_t generation = 0;
+    while (!self->video_stop_.load()) {
+        if (self->video_paused_.load()) {
+            vTaskDelay(pdMS_TO_TICKS(20));
+            continue;
+        }
+        int free_slot = -1;
+        for (size_t index = 0; index < self->video_frames_.size(); ++index) {
+            uint8_t expected = 0;
+            if (self->video_frames_[index].state.compare_exchange_strong(expected, 3)) {
+                free_slot = static_cast<int>(index);  // 3 表示后台任务正在填充
+                break;
+            }
+        }
+        if (free_slot < 0) {
+            vTaskDelay(pdMS_TO_TICKS(4));
+            continue;
+        }
+        auto& slot = self->video_frames_[free_slot];
+        bool decoded = self->ReadNextJpegFrame(file, &slot.data, kMaximumJpegFrame, &self->video_stop_);
+        if (!decoded && !self->video_stop_.load()) {
+            std::rewind(file);
+            decoded = self->ReadNextJpegFrame(file, &slot.data, kMaximumJpegFrame, &self->video_stop_);
+        }
+        if (!decoded) {
+            slot.state.store(0);
+            if (!self->video_stop_.load()) self->video_error_.store(true);
+            break;
+        }
+        slot.generation = ++generation;
+        slot.state.store(1);
+        const long position = std::ftell(file);
+        const size_t file_size = self->video_file_size_.load();
+        if (position >= 0 && file_size != 0) {
+            self->video_progress_permille_.store(static_cast<uint32_t>(1000ULL * position / file_size));
+        }
+        vTaskDelay(pdMS_TO_TICKS(20));  // 上限约 50 帧，给 LVGL、触摸和小智任务保留 CPU 时间
+    }
+    std::fclose(file);
+    self->video_task_.store(nullptr);
+    vTaskDelete(nullptr);
 }
 
 bool WatchApplications::LoadComicFrame(uint32_t frame_index) {
@@ -714,6 +833,7 @@ void WatchApplications::VideoPlayCallback(lv_event_t* event) {
     auto* self = static_cast<WatchApplications*>(lv_event_get_user_data(event));
     if (self == nullptr) return;
     self->video_playing_ = !self->video_playing_;
+    self->video_paused_.store(!self->video_playing_);
     SetButtonText(self->media_play_button_label_, self->video_playing_ ? "暂停" : "播放");
 }
 
