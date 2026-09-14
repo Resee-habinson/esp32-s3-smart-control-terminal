@@ -1,4 +1,5 @@
 #include "watch_apps.h"
+#include "watch_ui_metrics.h"
 
 #include "application.h"
 #include "audio/audio_codec.h"
@@ -85,10 +86,10 @@ const char* MediaTitle(WatchApplications::AppId id) {
 
 const char* MediaRoot(WatchApplications::AppId id) {
     switch (id) {
-        case WatchApplications::AppId::kPicture: return "/图片";
-        case WatchApplications::AppId::kVideo: return "/视频";
-        case WatchApplications::AppId::kMusic: return "/音乐";
-        case WatchApplications::AppId::kComic: return "/漫画";
+        case WatchApplications::AppId::kPicture: return "/picture";
+        case WatchApplications::AppId::kVideo: return "/video";
+        case WatchApplications::AppId::kMusic: return "/music";
+        case WatchApplications::AppId::kComic: return "/comic";
         default: return "/";
     }
 }
@@ -111,18 +112,22 @@ void WatchApplications::CreateMediaList(AppId id) {
     media_root_ = MediaRoot(id);
 
     lv_obj_t* back = CreateMediaButton(overlay_, "返回", 76, 38, lv_color_hex(0x374151));
-    lv_obj_set_pos(back, 12, 34);
+    lv_obj_set_size(back, 60, 32);
+    lv_obj_set_pos(back, 6, 28);
     lv_obj_add_event_cb(back, MediaBackCallback, LV_EVENT_CLICKED, this);
 
     media_title_ = lv_label_create(overlay_);
     lv_label_set_text(media_title_, MediaTitle(id));
     lv_obj_set_style_text_font(media_title_, GetMediaTextFont(), 0);
     lv_obj_set_style_text_color(media_title_, lv_color_white(), 0);
-    lv_obj_align(media_title_, LV_ALIGN_TOP_MID, 0, 17);
+    lv_obj_set_width(media_title_, 150);
+    lv_label_set_long_mode(media_title_, LV_LABEL_LONG_DOT);
+    lv_obj_set_style_text_align(media_title_, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(media_title_, LV_ALIGN_TOP_MID, 0, 28);
 
     media_list_ = lv_obj_create(overlay_);
-    lv_obj_set_size(media_list_, 456, 228);
-    lv_obj_set_pos(media_list_, 12, 82);
+    lv_obj_set_size(media_list_, WatchUiMetrics::kContentWidth, 214);
+    lv_obj_set_pos(media_list_, 6, 62);
     lv_obj_set_flex_flow(media_list_, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_style_pad_all(media_list_, 8, 0);
     lv_obj_set_style_pad_row(media_list_, 7, 0);
@@ -147,14 +152,14 @@ void WatchApplications::CreateMediaList(AppId id) {
         } else {
             lv_label_set_text_fmt(message, "%s目录中没有支持的文件", media_root_.c_str());
         }
-        lv_obj_set_width(message, 420);
+        lv_obj_set_width(message, 204);
         lv_obj_set_style_text_align(message, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_style_text_color(message, lv_color_hex(0x94a3b8), 0);
         return;
     }
 
     for (size_t index = 0; index < media_entries_.size(); ++index) {
-        lv_obj_t* button = CreateMediaButton(media_list_, media_entries_[index].name.c_str(), 420, 46,
+        lv_obj_t* button = CreateMediaButton(media_list_, media_entries_[index].name.c_str(), 212, 40,
                                              lv_color_hex(0x1f2937));
         lv_obj_set_user_data(button, reinterpret_cast<void*>(index));
         lv_obj_add_event_cb(button, MediaItemCallback, LV_EVENT_CLICKED, this);
@@ -184,28 +189,32 @@ void WatchApplications::ShowPicture(size_t index) {
     media_lvgl_path_ = "A:" + vfs_path;
 
     lv_obj_t* back = CreateMediaButton(overlay_, "目录", 72, 36, lv_color_hex(0x374151));
-    lv_obj_set_pos(back, 10, 34);
+    lv_obj_set_size(back, 60, 32);
+    lv_obj_set_pos(back, 6, 28);
     lv_obj_add_event_cb(back, MediaBackCallback, LV_EVENT_CLICKED, this);
     media_title_ = lv_label_create(overlay_);
     lv_label_set_text(media_title_, media_entries_[index].name.c_str());
     lv_label_set_long_mode(media_title_, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    lv_obj_set_width(media_title_, 290);
-    lv_obj_align(media_title_, LV_ALIGN_TOP_MID, 0, 16);
+    lv_obj_set_width(media_title_, 150);
+    lv_obj_align(media_title_, LV_ALIGN_TOP_MID, 0, 28);
 
     media_image_ = lv_image_create(overlay_);
-    lv_obj_set_size(media_image_, 456, 230);
-    lv_obj_align(media_image_, LV_ALIGN_CENTER, 0, 5);
+    lv_obj_set_size(media_image_, 228, 168);
+    lv_obj_set_pos(media_image_, 6, 62);
     lv_image_set_inner_align(media_image_, LV_IMAGE_ALIGN_CONTAIN);
     lv_image_set_src(media_image_, media_lvgl_path_.c_str());
 
     lv_obj_t* previous = CreateMediaButton(overlay_, "上一张", 96, 38, lv_color_hex(0x334155));
-    lv_obj_align(previous, LV_ALIGN_BOTTOM_LEFT, 12, -8);
+    lv_obj_set_size(previous, 70, 32);
+    lv_obj_align(previous, LV_ALIGN_BOTTOM_LEFT, 4, -4);
     lv_obj_add_event_cb(previous, MediaPreviousCallback, LV_EVENT_CLICKED, this);
     lv_obj_t* carousel = CreateMediaButton(overlay_, "轮播", 96, 38, lv_color_hex(0x2563eb));
-    lv_obj_align(carousel, LV_ALIGN_BOTTOM_MID, 0, -8);
+    lv_obj_set_size(carousel, 70, 32);
+    lv_obj_align(carousel, LV_ALIGN_BOTTOM_MID, 0, -4);
     lv_obj_add_event_cb(carousel, PictureCarouselCallback, LV_EVENT_CLICKED, this);
     lv_obj_t* next = CreateMediaButton(overlay_, "下一张", 96, 38, lv_color_hex(0x334155));
-    lv_obj_align(next, LV_ALIGN_BOTTOM_RIGHT, -12, -8);
+    lv_obj_set_size(next, 70, 32);
+    lv_obj_align(next, LV_ALIGN_BOTTOM_RIGHT, -4, -4);
     lv_obj_add_event_cb(next, MediaNextCallback, LV_EVENT_CLICKED, this);
     Settings settings("watch", false);
     const int interval = std::clamp<int>(settings.GetInt("carousel_sec", 5), 1, 10);
@@ -235,26 +244,28 @@ void WatchApplications::ShowVideo(size_t index) {
     media_mode_ = MediaMode::kVideo;
     video_playing_ = true;
     lv_obj_t* back = CreateMediaButton(overlay_, "目录", 72, 36, lv_color_hex(0x374151));
-    lv_obj_set_pos(back, 10, 34);
+    lv_obj_set_size(back, 60, 32);
+    lv_obj_set_pos(back, 6, 28);
     lv_obj_add_event_cb(back, MediaBackCallback, LV_EVENT_CLICKED, this);
     media_title_ = lv_label_create(overlay_);
     lv_label_set_text(media_title_, media_entries_[index].name.c_str());
     lv_label_set_long_mode(media_title_, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    lv_obj_set_width(media_title_, 300);
-    lv_obj_align(media_title_, LV_ALIGN_TOP_MID, 0, 16);
+    lv_obj_set_width(media_title_, 150);
+    lv_obj_align(media_title_, LV_ALIGN_TOP_MID, 0, 28);
     media_image_ = lv_image_create(overlay_);
-    lv_obj_set_size(media_image_, 456, 226);
-    lv_obj_align(media_image_, LV_ALIGN_CENTER, 0, 4);
+    lv_obj_set_size(media_image_, 228, 166);
+    lv_obj_set_pos(media_image_, 6, 62);
     lv_image_set_inner_align(media_image_, LV_IMAGE_ALIGN_CONTAIN);
     lv_obj_set_style_bg_color(media_image_, lv_color_black(), 0);
     lv_obj_set_style_bg_opa(media_image_, LV_OPA_COVER, 0);
     lv_obj_t* play = CreateMediaButton(overlay_, "暂停", 90, 38, lv_color_hex(0x2563eb));
-    lv_obj_align(play, LV_ALIGN_BOTTOM_LEFT, 12, -8);
+    lv_obj_set_size(play, 70, 32);
+    lv_obj_align(play, LV_ALIGN_BOTTOM_LEFT, 4, -4);
     media_play_button_label_ = lv_obj_get_child(play, 0);
     lv_obj_add_event_cb(play, VideoPlayCallback, LV_EVENT_CLICKED, this);
     media_progress_ = lv_bar_create(overlay_);
-    lv_obj_set_size(media_progress_, 340, 10);
-    lv_obj_align(media_progress_, LV_ALIGN_BOTTOM_RIGHT, -14, -22);
+    lv_obj_set_size(media_progress_, 154, 10);
+    lv_obj_align(media_progress_, LV_ALIGN_BOTTOM_RIGHT, -8, -15);
     lv_bar_set_range(media_progress_, 0, 1000);
     if (app_timer_ != nullptr) lv_timer_set_period(app_timer_, kUiRefreshPeriodMs);
     StartVideoTask();
@@ -269,17 +280,18 @@ void WatchApplications::ShowMusic(size_t index) {
     if (WatchStorage::Instance().GetVfsPath(media_path_, &music_task_path_) != ESP_OK) return;
 
     lv_obj_t* back = CreateMediaButton(overlay_, "目录", 72, 36, lv_color_hex(0x374151));
-    lv_obj_set_pos(back, 10, 34);
+    lv_obj_set_size(back, 60, 32);
+    lv_obj_set_pos(back, 6, 28);
     lv_obj_add_event_cb(back, MediaBackCallback, LV_EVENT_CLICKED, this);
     media_title_ = lv_label_create(overlay_);
     lv_label_set_text(media_title_, media_entries_[index].name.c_str());
     lv_label_set_long_mode(media_title_, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    lv_obj_set_width(media_title_, 330);
-    lv_obj_align(media_title_, LV_ALIGN_TOP_MID, 20, 16);
+    lv_obj_set_width(media_title_, 170);
+    lv_obj_align(media_title_, LV_ALIGN_TOP_MID, 20, 28);
 
     lv_obj_t* disc = lv_obj_create(overlay_);
-    lv_obj_set_size(disc, 132, 132);
-    lv_obj_align(disc, LV_ALIGN_CENTER, -105, -5);
+    lv_obj_set_size(disc, 90, 90);
+    lv_obj_align(disc, LV_ALIGN_CENTER, -58, -5);
     lv_obj_set_style_radius(disc, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(disc, lv_color_hex(0x111827), 0);
     lv_obj_set_style_border_color(disc, lv_color_hex(0x3b82f6), 0);
@@ -293,21 +305,22 @@ void WatchApplications::ShowMusic(size_t index) {
     media_status_ = lv_label_create(overlay_);
     lv_label_set_text(media_status_, "准备播放");
     lv_obj_set_style_text_color(media_status_, lv_color_hex(0xcbd5e1), 0);
-    lv_obj_set_pos(media_status_, 255, 88);
+    lv_obj_set_pos(media_status_, 126, 78);
     media_progress_ = lv_bar_create(overlay_);
-    lv_obj_set_size(media_progress_, 190, 10);
-    lv_obj_set_pos(media_progress_, 255, 130);
+    lv_obj_set_size(media_progress_, 100, 10);
+    lv_obj_set_pos(media_progress_, 126, 112);
     lv_bar_set_range(media_progress_, 0, 1000);
     lv_obj_t* play = CreateMediaButton(overlay_, "暂停", 104, 46, lv_color_hex(0x2563eb));
-    lv_obj_set_pos(play, 297, 160);
+    lv_obj_set_size(play, 84, 38);
+    lv_obj_set_pos(play, 139, 138);
     media_play_button_label_ = lv_obj_get_child(play, 0);
     lv_obj_add_event_cb(play, MusicPlayCallback, LV_EVENT_CLICKED, this);
     lv_obj_t* volume_text = lv_label_create(overlay_);
     lv_label_set_text(volume_text, "音量");
-    lv_obj_set_pos(volume_text, 252, 231);
+    lv_obj_set_pos(volume_text, 84, 193);
     media_volume_ = lv_slider_create(overlay_);
-    lv_obj_set_size(media_volume_, 150, 16);
-    lv_obj_set_pos(media_volume_, 302, 233);
+    lv_obj_set_size(media_volume_, 100, 16);
+    lv_obj_set_pos(media_volume_, 126, 193);
     lv_slider_set_range(media_volume_, 0, 100);
     lv_slider_set_value(media_volume_, music_volume_percent_.load(), LV_ANIM_OFF);
     lv_obj_add_event_cb(media_volume_, MusicVolumeCallback, LV_EVENT_VALUE_CHANGED, this);
@@ -345,22 +358,25 @@ void WatchApplications::ShowComic(size_t index) {
     lv_obj_clean(overlay_);
     media_mode_ = MediaMode::kComic;
     lv_obj_t* back = CreateMediaButton(overlay_, "目录", 72, 36, lv_color_hex(0x374151));
-    lv_obj_set_pos(back, 10, 34);
+    lv_obj_set_size(back, 60, 32);
+    lv_obj_set_pos(back, 6, 28);
     lv_obj_add_event_cb(back, MediaBackCallback, LV_EVENT_CLICKED, this);
     media_title_ = lv_label_create(overlay_);
-    lv_obj_set_width(media_title_, 300);
-    lv_obj_align(media_title_, LV_ALIGN_TOP_MID, 0, 16);
+    lv_obj_set_width(media_title_, 150);
+    lv_obj_align(media_title_, LV_ALIGN_TOP_MID, 0, 28);
     media_image_ = lv_image_create(overlay_);
-    lv_obj_set_size(media_image_, 456, 226);
-    lv_obj_align(media_image_, LV_ALIGN_CENTER, 0, 4);
+    lv_obj_set_size(media_image_, 228, 166);
+    lv_obj_set_pos(media_image_, 6, 62);
     lv_image_set_inner_align(media_image_, LV_IMAGE_ALIGN_CONTAIN);
     lv_obj_t* previous = CreateMediaButton(overlay_, "上一页", 96, 38, lv_color_hex(0x334155));
-    lv_obj_align(previous, LV_ALIGN_BOTTOM_LEFT, 12, -8);
+    lv_obj_set_size(previous, 76, 32);
+    lv_obj_align(previous, LV_ALIGN_BOTTOM_LEFT, 4, -4);
     lv_obj_add_event_cb(previous, MediaPreviousCallback, LV_EVENT_CLICKED, this);
     media_status_ = lv_label_create(overlay_);
-    lv_obj_align(media_status_, LV_ALIGN_BOTTOM_MID, 0, -18);
+    lv_obj_align(media_status_, LV_ALIGN_BOTTOM_MID, 0, -12);
     lv_obj_t* next = CreateMediaButton(overlay_, "下一页", 96, 38, lv_color_hex(0x2563eb));
-    lv_obj_align(next, LV_ALIGN_BOTTOM_RIGHT, -12, -8);
+    lv_obj_set_size(next, 76, 32);
+    lv_obj_align(next, LV_ALIGN_BOTTOM_RIGHT, -4, -4);
     lv_obj_add_event_cb(next, MediaNextCallback, LV_EVENT_CLICKED, this);
     LoadComicFrame(comic_frame_);
 }

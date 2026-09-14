@@ -1,5 +1,6 @@
 #include "watch_apps.h"
 #include "watch_countdown_service.h"
+#include "watch_ui_metrics.h"
 
 #include "application.h"
 
@@ -29,11 +30,11 @@ LV_FONT_DECLARE(time_80);
 
 namespace {
 constexpr char kTag[] = "watch_apps";
-constexpr int kWidth = 480;
-constexpr int kHeight = 320;
+constexpr int kWidth = WatchUiMetrics::kWidth;
+constexpr int kHeight = WatchUiMetrics::kHeight;
 constexpr int kGridSize = 4;
-constexpr int kTileSize = 56;
-constexpr int kTileGap = 6;
+constexpr int kTileSize = 45;
+constexpr int kTileGap = 5;
 constexpr int kBoardSize = kGridSize * kTileSize + (kGridSize + 1) * kTileGap;
 constexpr int64_t kUsPerSecond = 1000000;
 
@@ -74,6 +75,25 @@ const lv_font_t* GetWatchTextFont() {
     auto* theme = static_cast<LvglTheme*>(display->GetTheme());
     if (theme->text_font() == nullptr || theme->text_font()->font() == nullptr) return LV_FONT_DEFAULT;
     return theme->text_font()->font();
+}
+
+/**
+ * 函    数：把仍引用旧主题字体的 LVGL 对象递归切换到新字体
+ * 参    数：root 对象树根节点；previous_font 旧字体；current_font 新字体
+ * 返 回 值：无
+ * 注意事项：仅替换解析结果等于旧字体的对象，Montserrat 图标和数字字体不会被覆盖
+ */
+void RebindTextFontTree(lv_obj_t* root, const lv_font_t* previous_font,
+                        const lv_font_t* current_font) {
+    if (root == nullptr || previous_font == nullptr || current_font == nullptr) return;
+    if (lv_obj_get_style_text_font(root, LV_PART_MAIN) == previous_font) {
+        lv_obj_set_style_text_font(root, current_font, LV_PART_MAIN);
+    }
+    const uint32_t child_count = lv_obj_get_child_count(root);
+    for (uint32_t index = 0; index < child_count; ++index) {
+        RebindTextFontTree(lv_obj_get_child(root, static_cast<int32_t>(index)),
+                           previous_font, current_font);
+    }
 }
 
 /** 函数：设置对象显隐；参数：obj 目标对象，hidden 是否隐藏；返回值：无 */
@@ -118,7 +138,8 @@ bool WatchApplications::Initialize(lv_obj_t* watch_screen) {
     if (watch_screen == nullptr || watch_screen_ != nullptr) return false;
     watch_screen_ = watch_screen;
     /* 独立 Screen 不会自动继承小智主界面的主题，必须显式绑定中文字库。 */
-    lv_obj_set_style_text_font(watch_screen_, GetWatchTextFont(), 0);
+    active_text_font_ = GetWatchTextFont();
+    lv_obj_set_style_text_font(watch_screen_, active_text_font_, 0);
     LoadWeatherCache();
     /* 此时 Application 尚未启动 Wi-Fi/LwIP，不能在这里发起 DNS 或 HTTPS 请求。 */
     return true;
@@ -140,7 +161,8 @@ bool WatchApplications::Open(size_t index) {
     lv_obj_set_style_radius(overlay_, 0, 0);
     lv_obj_set_style_bg_color(overlay_, lv_color_black(), 0);
     lv_obj_set_style_bg_opa(overlay_, LV_OPA_COVER, 0);
-    lv_obj_set_style_text_font(overlay_, GetWatchTextFont(), 0);
+    active_text_font_ = GetWatchTextFont();
+    lv_obj_set_style_text_font(overlay_, active_text_font_, 0);
     lv_obj_remove_flag(overlay_, LV_OBJ_FLAG_SCROLLABLE);
     active_app_ = static_cast<AppId>(index);
 
@@ -224,6 +246,7 @@ void WatchApplications::AppTimerCallback(lv_timer_t* timer) {
 }
 
 void WatchApplications::UpdateActiveApplication() {
+    RefreshActiveTextFont();
     switch (active_app_) {
         case AppId::kClock: UpdateClock(); break;
         case AppId::kStopwatch:
@@ -241,6 +264,36 @@ void WatchApplications::UpdateActiveApplication() {
             UpdateNetworkTimeSync(); break;
         default: break;
     }
+}
+
+/**
+ * 函    数：在小智资源分区刷新主题后同步当前手表应用的字体
+ * 参    数：无
+ * 返 回 值：无
+ * 注意事项：由 LVGL 应用定时器调用；字体未变化时只进行一次指针比较
+ */
+void WatchApplications::RefreshActiveTextFont() {
+    const lv_font_t* current_font = GetWatchTextFont();
+    if (overlay_ == nullptr || current_font == nullptr || current_font == active_text_font_) return;
+
+    RebindTextFontTree(overlay_, active_text_font_, current_font);
+    /* Dropdown 的弹出列表可能挂在顶层而不是 overlay 下，需要单独更新。 */
+    for (lv_obj_t* dropdown : settings_time_inputs_) {
+        if (dropdown != nullptr && lv_obj_is_valid(dropdown)) {
+            lv_obj_t* list = lv_dropdown_get_list(dropdown);
+            if (list != nullptr && lv_obj_is_valid(list)) {
+                lv_obj_set_style_text_font(list, current_font, LV_PART_MAIN);
+            }
+        }
+    }
+    if (settings_selector_ != nullptr && lv_obj_is_valid(settings_selector_)) {
+        lv_obj_t* list = lv_dropdown_get_list(settings_selector_);
+        if (list != nullptr && lv_obj_is_valid(list)) {
+            lv_obj_set_style_text_font(list, current_font, LV_PART_MAIN);
+        }
+    }
+    active_text_font_ = current_font;
+    ESP_LOGI(kTag, "Rebound active watch UI to refreshed text font");
 }
 
 void WatchApplications::CreateClock() {
@@ -266,13 +319,13 @@ void WatchApplications::CreateClock() {
     clock_time_label_ = lv_label_create(overlay_);
     lv_obj_set_style_text_font(clock_time_label_, &time_80, 0);
     lv_obj_set_style_text_color(clock_time_label_, lv_color_white(), 0);
-    lv_obj_align(clock_time_label_, LV_ALIGN_CENTER, 0, -26);
+    lv_obj_align(clock_time_label_, LV_ALIGN_CENTER, 0, -16);
     clock_second_label_ = lv_label_create(overlay_);
     lv_obj_set_style_text_color(clock_second_label_, lv_color_hex(0x55d6ff), 0);
-    lv_obj_align(clock_second_label_, LV_ALIGN_CENTER, 0, 42);
+    lv_obj_align(clock_second_label_, LV_ALIGN_CENTER, 0, 40);
     clock_date_label_ = lv_label_create(overlay_);
     lv_obj_set_style_text_color(clock_date_label_, lv_color_hex(0xb8b8b8), 0);
-    lv_obj_align(clock_date_label_, LV_ALIGN_BOTTOM_MID, 0, -28);
+    lv_obj_align(clock_date_label_, LV_ALIGN_BOTTOM_MID, 0, -10);
 }
 
 void WatchApplications::UpdateClock() {
@@ -307,17 +360,17 @@ void WatchApplications::CreateGame() {
     lv_obj_add_event_cb(overlay_, GameTouchCallback, LV_EVENT_RELEASED, this);
     lv_obj_t* title = lv_label_create(overlay_);
     lv_label_set_text(title, "2048");
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_48, 0);
+    lv_obj_set_style_text_font(title, GetWatchTextFont(), 0);
     lv_obj_set_style_text_color(title, lv_color_hex(0x776e65), 0);
-    /* 顶部中间区域不与左侧时间、右侧电量状态重叠。 */
-    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 6);
+    /* 原版标题坐标上移 20 px；为全局状态栏保留 24 px 后保持相同相对位置。 */
+    lv_obj_align(title, LV_ALIGN_TOP_LEFT, 20, 28);
     game_score_label_ = lv_label_create(overlay_);
     lv_obj_set_style_text_color(game_score_label_, lv_color_hex(0x776e65), 0);
-    lv_obj_align(game_score_label_, LV_ALIGN_TOP_RIGHT, -24, 38);
+    lv_obj_align(game_score_label_, LV_ALIGN_TOP_RIGHT, -20, 29);
 
     lv_obj_t* board = lv_obj_create(overlay_);
     lv_obj_set_size(board, kBoardSize, kBoardSize);
-    lv_obj_align(board, LV_ALIGN_CENTER, 0, 23);
+    lv_obj_align(board, LV_ALIGN_CENTER, 0, 25);
     lv_obj_set_style_bg_color(board, lv_color_hex(0xbbada0), 0);
     lv_obj_set_style_pad_all(board, 0, 0);
     lv_obj_set_style_border_width(board, 0, 0);
@@ -430,9 +483,9 @@ void WatchApplications::GameTouchCallback(lv_event_t* event) {
 void WatchApplications::CreateCalculator() {
     calculator_expression_.clear();
     calculator_textarea_ = lv_textarea_create(overlay_);
-    lv_obj_set_size(calculator_textarea_, 456, 50);
-    lv_obj_align(calculator_textarea_, LV_ALIGN_TOP_MID, 0, 34);
-    lv_textarea_set_one_line(calculator_textarea_, true);
+    lv_obj_set_size(calculator_textarea_, 230, 70);
+    lv_obj_align(calculator_textarea_, LV_ALIGN_TOP_MID, 0, 25);
+    lv_textarea_set_one_line(calculator_textarea_, false);
     lv_obj_set_style_bg_color(calculator_textarea_, lv_color_black(), 0);
     lv_obj_set_style_text_color(calculator_textarea_, lv_color_white(), 0);
     lv_obj_set_style_text_align(calculator_textarea_, LV_TEXT_ALIGN_RIGHT, 0);
@@ -451,9 +504,10 @@ void WatchApplications::CreateCalculator() {
             const bool operation = std::strstr("+-×÷=%", token) != nullptr;
             const lv_color_t color = operation ? lv_color_hex(0xf59e0b) :
                                      (row == 0 ? lv_color_hex(0x505050) : lv_color_hex(0x2d2d2d));
-            const int width = (row == 4 && col == 2) ? 220 : 106;
-            lv_obj_t* button = CreateTextButton(overlay_, token, color, width, 38);
-            lv_obj_set_pos(button, 12 + col * 114, 92 + row * 43);
+            const int width = (row == 4 && col == 2) ? 112 : 53;
+            lv_obj_t* button = CreateTextButton(overlay_, token, color, width, 34);
+            lv_obj_set_style_radius(button, 12, 0);
+            lv_obj_set_pos(button, 5 + col * 59, 96 + row * 36);
             lv_obj_set_user_data(button, const_cast<char*>(token));
             lv_obj_add_event_cb(button, CalculatorButtonCallback, LV_EVENT_CLICKED, this);
         }
@@ -533,7 +587,7 @@ void WatchApplications::EvaluateCalculator() {
 }
 
 void WatchApplications::CreateStopwatch() {
-    /* 原版为两张 240×280 横向翻页；此处仅把单页等比扩展到 480×320。 */
+    /* 复用原版 240×280 两页横向吸附结构。 */
     lv_obj_t* scroll = lv_obj_create(overlay_);
     lv_obj_set_size(scroll, kWidth, kHeight);
     lv_obj_set_pos(scroll, 0, 0);
@@ -560,20 +614,20 @@ void WatchApplications::CreateStopwatch() {
     lv_obj_t* title = lv_label_create(left);
     lv_label_set_text(title, "秒表");
     lv_obj_set_style_text_color(title, lv_color_white(), 0);
-    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 20);
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 27);
     stopwatch_ui_.time_label = lv_label_create(left);
     lv_label_set_text(stopwatch_ui_.time_label, "00:00.00");
     lv_obj_set_style_text_font(stopwatch_ui_.time_label, &lv_font_montserrat_48, 0);
     lv_obj_set_style_text_color(stopwatch_ui_.time_label, lv_color_white(), 0);
-    lv_obj_align(stopwatch_ui_.time_label, LV_ALIGN_CENTER, 0, -20);
+    lv_obj_align(stopwatch_ui_.time_label, LV_ALIGN_CENTER, 0, -15);
 
     stopwatch_ui_.start_button = CreateTextButton(left, LV_SYMBOL_PLAY, lv_color_hex(0x22c55e), 60, 60);
     stopwatch_ui_.pause_button = CreateTextButton(left, LV_SYMBOL_PAUSE, lv_color_hex(0x3b82f6), 60, 60);
     stopwatch_ui_.reset_button = CreateTextButton(left, LV_SYMBOL_REFRESH, lv_color_hex(0xef4444), 60, 60);
     lv_obj_set_style_radius(stopwatch_ui_.reset_button, 10, 0);
     lv_obj_align(stopwatch_ui_.start_button, LV_ALIGN_BOTTOM_MID, 0, -20);
-    lv_obj_align(stopwatch_ui_.pause_button, LV_ALIGN_BOTTOM_MID, -46, -20);
-    lv_obj_align(stopwatch_ui_.reset_button, LV_ALIGN_BOTTOM_MID, 46, -20);
+    lv_obj_align(stopwatch_ui_.pause_button, LV_ALIGN_BOTTOM_MID, -36, -20);
+    lv_obj_align(stopwatch_ui_.reset_button, LV_ALIGN_BOTTOM_MID, 36, -20);
     lv_obj_add_event_cb(stopwatch_ui_.start_button, StopwatchStartCallback, LV_EVENT_CLICKED, this);
     lv_obj_add_event_cb(stopwatch_ui_.pause_button, StopwatchPauseCallback, LV_EVENT_CLICKED, this);
     lv_obj_add_event_cb(stopwatch_ui_.reset_button, StopwatchResetCallback, LV_EVENT_CLICKED, this);
@@ -581,13 +635,13 @@ void WatchApplications::CreateStopwatch() {
     title = lv_label_create(right);
     lv_label_set_text(title, "倒计时");
     lv_obj_set_style_text_color(title, lv_color_white(), 0);
-    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 20);
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 27);
     static const char kRollerOptions[] =
         "00\n01\n02\n03\n04\n05\n06\n07\n08\n09\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n41\n42\n43\n44\n45\n46\n47\n48\n49\n50\n51\n52\n53\n54\n55\n56\n57\n58\n59";
     countdown_ui_.minute_roller = lv_roller_create(right);
     countdown_ui_.second_roller = lv_roller_create(right);
     for (lv_obj_t* roller : {countdown_ui_.minute_roller, countdown_ui_.second_roller}) {
-        lv_obj_set_width(roller, 92);
+        lv_obj_set_width(roller, 60);
         lv_roller_set_options(roller, kRollerOptions, LV_ROLLER_MODE_NORMAL);
         lv_roller_set_visible_row_count(roller, 4);
         lv_obj_set_style_bg_opa(roller, LV_OPA_TRANSP, LV_PART_MAIN);
@@ -599,11 +653,11 @@ void WatchApplications::CreateStopwatch() {
         lv_obj_set_style_bg_opa(roller, LV_OPA_TRANSP, LV_PART_SELECTED);
         lv_obj_set_scrollbar_mode(roller, LV_SCROLLBAR_MODE_OFF);
     }
-    lv_obj_align(countdown_ui_.minute_roller, LV_ALIGN_CENTER, -82, -30);
-    lv_obj_align(countdown_ui_.second_roller, LV_ALIGN_CENTER, 82, -30);
+    lv_obj_align(countdown_ui_.minute_roller, LV_ALIGN_CENTER, -65, -30);
+    lv_obj_align(countdown_ui_.second_roller, LV_ALIGN_CENTER, 65, -30);
     countdown_ui_.colon_label = lv_label_create(right);
     lv_label_set_text(countdown_ui_.colon_label, ":");
-    lv_obj_set_style_text_font(countdown_ui_.colon_label, &lv_font_montserrat_48, 0);
+    lv_obj_set_style_text_font(countdown_ui_.colon_label, &lv_font_montserrat_40, 0);
     lv_obj_set_style_text_color(countdown_ui_.colon_label, lv_color_white(), 0);
     lv_obj_align(countdown_ui_.colon_label, LV_ALIGN_CENTER, 0, -35);
 
@@ -628,9 +682,9 @@ void WatchApplications::CreateStopwatch() {
     countdown_ui_.pause_button = CreateTextButton(right, LV_SYMBOL_PAUSE, lv_color_hex(0x3b82f6), 60, 60);
     countdown_ui_.reset_button = CreateTextButton(right, LV_SYMBOL_REFRESH, lv_color_hex(0xef4444), 60, 60);
     lv_obj_set_style_radius(countdown_ui_.reset_button, 10, 0);
-    lv_obj_align(countdown_ui_.start_button, LV_ALIGN_BOTTOM_MID, 0, -8);
-    lv_obj_align(countdown_ui_.pause_button, LV_ALIGN_BOTTOM_MID, -46, -8);
-    lv_obj_align(countdown_ui_.reset_button, LV_ALIGN_BOTTOM_MID, 46, -8);
+    lv_obj_align(countdown_ui_.start_button, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_align(countdown_ui_.pause_button, LV_ALIGN_BOTTOM_MID, -36, 0);
+    lv_obj_align(countdown_ui_.reset_button, LV_ALIGN_BOTTOM_MID, 36, 0);
     lv_obj_add_event_cb(countdown_ui_.start_button, CountdownStartCallback, LV_EVENT_CLICKED, this);
     lv_obj_add_event_cb(countdown_ui_.pause_button, CountdownPauseCallback, LV_EVENT_CLICKED, this);
     lv_obj_add_event_cb(countdown_ui_.reset_button, CountdownResetCallback, LV_EVENT_CLICKED, this);
@@ -742,10 +796,10 @@ void WatchApplications::CountdownResetCallback(lv_event_t* event) {
     self->SetCountdownButtons();
 }
 void WatchApplications::CreateCalendar() {
-    /* 复用原工程的 LVGL 日历控件，仅针对 480×320 放大可视区域。 */
+    /* 原工程日历为 220×240；为全局状态栏保留顶部空间后贴近页面底部。 */
     lv_obj_t* calendar = lv_calendar_create(overlay_);
-    lv_obj_set_size(calendar, 430, 272);
-    lv_obj_align(calendar, LV_ALIGN_BOTTOM_MID, 0, -8);
+    lv_obj_set_size(calendar, 220, 240);
+    lv_obj_align(calendar, LV_ALIGN_BOTTOM_MID, 0, -4);
     lv_obj_set_style_text_font(calendar, GetWatchTextFont(), 0);
 
     const std::time_t now = std::time(nullptr);
@@ -798,12 +852,12 @@ void WatchApplications::CreateSettings() {
         "时间同步", "WiFi", "壁纸", "电池校准", "自动轮播间隔", "重新扫描SD卡", "天气设置",
     };
     settings_list_ = lv_list_create(overlay_);
-    lv_obj_set_size(settings_list_, 430, 272);
-    lv_obj_align(settings_list_, LV_ALIGN_BOTTOM_MID, 0, -8);
+    lv_obj_set_size(settings_list_, WatchUiMetrics::kContentWidth, 246);
+    lv_obj_align(settings_list_, LV_ALIGN_BOTTOM_MID, 0, -2);
     lv_obj_set_style_text_font(settings_list_, GetWatchTextFont(), 0);
     for (const char* item_text : kItems) {
         lv_obj_t* button = lv_list_add_button(settings_list_, nullptr, item_text);
-        lv_obj_set_height(button, 50);
+        lv_obj_set_height(button, 44);
         lv_obj_set_style_text_font(button, GetWatchTextFont(), 0);
         lv_obj_add_event_cb(button, SettingsItemCallback, LV_EVENT_CLICKED, this);
     }
@@ -824,15 +878,15 @@ void WatchApplications::ShowSettingsDetail(const char* item_text) {
     settings_selector_ = settings_input_a_ = settings_input_b_ = nullptr;
     settings_time_inputs_.fill(nullptr);
 
-    lv_obj_t* back = CreateTextButton(settings_detail_, LV_SYMBOL_LEFT, lv_color_hex(0x303030), 54, 42);
-    lv_obj_set_pos(back, 14, 34);
+    lv_obj_t* back = CreateTextButton(settings_detail_, LV_SYMBOL_LEFT, lv_color_hex(0x303030), 44, 34);
+    lv_obj_set_pos(back, 5, 27);
     lv_obj_add_event_cb(back, SettingsBackCallback, LV_EVENT_CLICKED, this);
     lv_obj_t* title = lv_label_create(settings_detail_);
     lv_label_set_text(title, item_text);
     lv_obj_set_style_text_color(title, lv_color_white(), 0);
-    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 24);
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 29);
     settings_status_label_ = lv_label_create(settings_detail_);
-    lv_obj_set_width(settings_status_label_, 410);
+    lv_obj_set_width(settings_status_label_, 224);
     lv_obj_set_style_text_align(settings_status_label_, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_color(settings_status_label_, lv_color_hex(0xd1d5db), 0);
     lv_obj_align(settings_status_label_, LV_ALIGN_CENTER, 0, 6);
@@ -844,11 +898,12 @@ void WatchApplications::ShowSettingsDetail(const char* item_text) {
         lv_label_set_text_fmt(settings_status_label_, "小智联网时自动校时；也可在下方手动设置\n当前：%04d-%02d-%02d  %02d:%02d:%02d",
                               local.tm_year + 1900, local.tm_mon + 1, local.tm_mday,
                               local.tm_hour, local.tm_min, local.tm_sec);
-        lv_obj_align(settings_status_label_, LV_ALIGN_TOP_MID, 0, 58);
+        lv_obj_align(settings_status_label_, LV_ALIGN_TOP_MID, 0, 55);
 
         static const char* const kCaptions[] = {"年", "月", "日", "时", "分"};
-        static const int kX[] = {26, 126, 206, 286, 366};
-        static const int kWidths[] = {88, 68, 68, 68, 68};
+        static const int kX[] = {10, 100, 170, 40, 130};
+        static const int kY[] = {92, 92, 92, 150, 150};
+        static const int kWidths[] = {80, 60, 60, 70, 70};
         const std::string option_sets[] = {
             BuildNumberOptions(2020, 2030), BuildNumberOptions(1, 12), BuildNumberOptions(1, 31),
             BuildNumberOptions(0, 23), BuildNumberOptions(0, 59),
@@ -861,38 +916,41 @@ void WatchApplications::ShowSettingsDetail(const char* item_text) {
         for (size_t index = 0; index < settings_time_inputs_.size(); ++index) {
             lv_obj_t* caption = lv_label_create(settings_detail_);
             lv_label_set_text(caption, kCaptions[index]);
-            lv_obj_set_pos(caption, kX[index] + kWidths[index] / 2 - 8, 96);
+            lv_obj_set_pos(caption, kX[index] + kWidths[index] / 2 - 8, kY[index] - 20);
             settings_time_inputs_[index] = lv_dropdown_create(settings_detail_);
             lv_dropdown_set_options(settings_time_inputs_[index], option_sets[index].c_str());
             lv_dropdown_set_selected(settings_time_inputs_[index], selected[index]);
             lv_dropdown_set_symbol(settings_time_inputs_[index], nullptr);
-            lv_obj_set_size(settings_time_inputs_[index], kWidths[index], 44);
-            lv_obj_set_pos(settings_time_inputs_[index], kX[index], 120);
+            lv_obj_set_size(settings_time_inputs_[index], kWidths[index], 38);
+            lv_obj_set_pos(settings_time_inputs_[index], kX[index], kY[index]);
             lv_obj_set_style_text_font(settings_time_inputs_[index], GetWatchTextFont(), 0);
             lv_obj_set_style_text_font(lv_dropdown_get_list(settings_time_inputs_[index]), GetWatchTextFont(), 0);
         }
         network_time_rendered_state_ = NetworkTimeState::kIdle;
         if (!network_time_running_.load()) network_time_state_.store(NetworkTimeState::kIdle);
         lv_obj_t* network_action = CreateTextButton(settings_detail_, "小智联网同步", lv_color_hex(0x2563eb), 180, 46);
-        lv_obj_align(network_action, LV_ALIGN_BOTTOM_LEFT, 42, -34);
+        lv_obj_set_size(network_action, 112, 38);
+        lv_obj_align(network_action, LV_ALIGN_BOTTOM_LEFT, 4, -4);
         lv_obj_add_event_cb(network_action, SettingsNetworkTimeCallback, LV_EVENT_CLICKED, this);
 
         settings_action_ = SettingsAction::kSetManualTime;
         lv_obj_t* manual_action = CreateTextButton(settings_detail_, "手动设置时间", lv_color_hex(0x16a34a), 180, 46);
-        lv_obj_align(manual_action, LV_ALIGN_BOTTOM_RIGHT, -42, -34);
+        lv_obj_set_size(manual_action, 112, 38);
+        lv_obj_align(manual_action, LV_ALIGN_BOTTOM_RIGHT, -4, -4);
         lv_obj_add_event_cb(manual_action, SettingsActionCallback, LV_EVENT_CLICKED, this);
     } else if (std::strcmp(item_text, "WiFi") == 0) {
         lv_label_set_text(settings_status_label_, "WiFi 由小智系统统一管理\n点击下方按钮可进入配网模式");
         settings_action_ = SettingsAction::kWifiConfig;
         lv_obj_t* action = CreateTextButton(settings_detail_, "进入配网", lv_color_hex(0x2563eb), 180, 48);
-        lv_obj_align(action, LV_ALIGN_BOTTOM_MID, 0, -38);
+        lv_obj_set_size(action, 140, 40);
+        lv_obj_align(action, LV_ALIGN_BOTTOM_MID, 0, -8);
         lv_obj_add_event_cb(action, SettingsActionCallback, LV_EVENT_CLICKED, this);
     } else if (std::strcmp(item_text, "壁纸") == 0) {
         settings_wallpapers_.clear();
         std::vector<WatchStorage::Entry> entries;
-        const esp_err_t error = WatchStorage::Instance().ListDirectory("/壁纸", &entries);
+        const esp_err_t error = WatchStorage::Instance().ListDirectory("/wallpaper", &entries);
         if (error != ESP_OK) {
-            lv_label_set_text_fmt(settings_status_label_, "无法读取 MicroSD 卡 /壁纸 目录\n%s", esp_err_to_name(error));
+            lv_label_set_text_fmt(settings_status_label_, "无法读取 MicroSD 卡 /wallpaper 目录\n%s", esp_err_to_name(error));
         } else {
             for (auto& entry : entries) {
                 if (!entry.is_directory && IsSupportedWallpaper(entry.name)) {
@@ -906,7 +964,7 @@ void WatchApplications::ShowSettingsDetail(const char* item_text) {
             for (const auto& entry : settings_wallpapers_) options += "\n" + entry.name;
             settings_selector_ = lv_dropdown_create(settings_detail_);
             lv_dropdown_set_options(settings_selector_, options.c_str());
-            lv_obj_set_width(settings_selector_, 320);
+            lv_obj_set_width(settings_selector_, 220);
             lv_obj_align(settings_selector_, LV_ALIGN_CENTER, 0, -8);
             lv_obj_set_style_text_font(settings_selector_, GetWatchTextFont(), 0);
             lv_obj_set_style_text_font(lv_dropdown_get_list(settings_selector_), GetWatchTextFont(), 0);
@@ -914,18 +972,19 @@ void WatchApplications::ShowSettingsDetail(const char* item_text) {
             Settings settings("watch", false);
             const std::string selected_path = settings.GetString("wallpaper_path");
             for (size_t index = 0; index < settings_wallpapers_.size(); ++index) {
-                if (selected_path == "/壁纸/" + settings_wallpapers_[index].name) {
+                if (selected_path == "/wallpaper/" + settings_wallpapers_[index].name) {
                     lv_dropdown_set_selected(settings_selector_, static_cast<uint32_t>(index + 1));
                     break;
                 }
             }
             lv_label_set_text(settings_status_label_, settings_wallpapers_.empty()
-                                  ? "未找到 JPEG 壁纸\n请放入 MicroSD 卡 /壁纸 目录"
+                                  ? "未找到 JPEG 壁纸\n请放入 MicroSD 卡 /wallpaper 目录"
                                   : "选择壁纸后点击应用\n进入时钟应用即可查看效果");
-            lv_obj_align(settings_status_label_, LV_ALIGN_TOP_MID, 0, 68);
+            lv_obj_align(settings_status_label_, LV_ALIGN_TOP_MID, 0, 62);
             settings_action_ = SettingsAction::kSaveWallpaper;
             lv_obj_t* action = CreateTextButton(settings_detail_, "应用壁纸", lv_color_hex(0x2563eb), 170, 46);
-            lv_obj_align(action, LV_ALIGN_BOTTOM_MID, 0, -34);
+            lv_obj_set_size(action, 140, 40);
+            lv_obj_align(action, LV_ALIGN_BOTTOM_MID, 0, -8);
             lv_obj_add_event_cb(action, SettingsActionCallback, LV_EVENT_CLICKED, this);
         }
     } else if (std::strcmp(item_text, "电池校准") == 0) {
@@ -938,7 +997,7 @@ void WatchApplications::ShowSettingsDetail(const char* item_text) {
             lv_label_set_text(settings_status_label_, "当前硬件未提供电池电量采样接口");
     } else if (std::strcmp(item_text, "自动轮播间隔") == 0) {
         lv_label_set_text(settings_status_label_, "设置图片应用自动轮播间隔");
-        lv_obj_align(settings_status_label_, LV_ALIGN_TOP_MID, 0, 76);
+        lv_obj_align(settings_status_label_, LV_ALIGN_TOP_MID, 0, 62);
         settings_selector_ = lv_dropdown_create(settings_detail_);
         lv_dropdown_set_options(settings_selector_, "1秒\n2秒\n3秒\n4秒\n5秒\n6秒\n7秒\n8秒\n9秒\n10秒");
         lv_obj_set_width(settings_selector_, 150);
@@ -949,47 +1008,51 @@ void WatchApplications::ShowSettingsDetail(const char* item_text) {
         lv_dropdown_set_selected(settings_selector_, interval - 1);
         settings_action_ = SettingsAction::kSaveCarousel;
         lv_obj_t* action = CreateTextButton(settings_detail_, "保存", lv_color_hex(0x2563eb), 150, 46);
-        lv_obj_align(action, LV_ALIGN_BOTTOM_MID, 0, -34);
+        lv_obj_set_size(action, 140, 40);
+        lv_obj_align(action, LV_ALIGN_BOTTOM_MID, 0, -8);
         lv_obj_add_event_cb(action, SettingsActionCallback, LV_EVENT_CLICKED, this);
     } else if (std::strcmp(item_text, "重新扫描SD卡") == 0) {
         lv_label_set_text(settings_status_label_, "插入 MicroSD 卡后点击下方按钮重新挂载");
         settings_action_ = SettingsAction::kRescanSd;
         lv_obj_t* action = CreateTextButton(settings_detail_, "重新扫描", lv_color_hex(0x2563eb), 180, 48);
-        lv_obj_align(action, LV_ALIGN_BOTTOM_MID, 0, -38);
+        lv_obj_set_size(action, 140, 40);
+        lv_obj_align(action, LV_ALIGN_BOTTOM_MID, 0, -8);
         lv_obj_add_event_cb(action, SettingsActionCallback, LV_EVENT_CLICKED, this);
     } else if (std::strcmp(item_text, "天气设置") == 0) {
         lv_label_set_text(settings_status_label_, "经度 / 纬度");
-        lv_obj_align(settings_status_label_, LV_ALIGN_TOP_MID, 0, 67);
+        lv_obj_align(settings_status_label_, LV_ALIGN_TOP_MID, 0, 58);
         Settings settings("watch", false);
         settings_input_a_ = lv_spinbox_create(settings_detail_);
         lv_spinbox_set_range(settings_input_a_, -1800000, 1800000);
         lv_spinbox_set_digit_format(settings_input_a_, 7, 3);
         lv_spinbox_set_value(settings_input_a_, settings.GetInt("weather_lon_e4", 1214700));
-        lv_obj_set_size(settings_input_a_, 145, 42);
-        lv_obj_set_pos(settings_input_a_, 54, 112);
+        lv_obj_set_size(settings_input_a_, 155, 38);
+        lv_obj_set_pos(settings_input_a_, 43, 90);
         settings_input_b_ = lv_spinbox_create(settings_detail_);
         lv_spinbox_set_range(settings_input_b_, -900000, 900000);
         lv_spinbox_set_digit_format(settings_input_b_, 6, 2);
         lv_spinbox_set_value(settings_input_b_, settings.GetInt("weather_lat_e4", 312300));
-        lv_obj_set_size(settings_input_b_, 145, 42);
-        lv_obj_set_pos(settings_input_b_, 282, 112);
+        lv_obj_set_size(settings_input_b_, 155, 38);
+        lv_obj_set_pos(settings_input_b_, 43, 136);
         for (lv_obj_t* input : {settings_input_a_, settings_input_b_}) {
             lv_spinbox_set_step(input, 100);
             lv_obj_set_style_text_font(input, GetWatchTextFont(), 0);
             lv_obj_set_style_text_align(input, LV_TEXT_ALIGN_CENTER, 0);
         }
         const int8_t adjustments[] = {-1, 1, -2, 2};
-        const int positions[] = {18, 203, 246, 431};
+        const int positions[] = {3, 201, 3, 201};
+        const int y_positions[] = {90, 90, 136, 136};
         const char* symbols[] = {LV_SYMBOL_MINUS, LV_SYMBOL_PLUS, LV_SYMBOL_MINUS, LV_SYMBOL_PLUS};
         for (size_t index = 0; index < 4; ++index) {
-            lv_obj_t* adjust = CreateTextButton(settings_detail_, symbols[index], lv_color_hex(0x374151), 42, 42);
-            lv_obj_set_pos(adjust, positions[index], 112);
+            lv_obj_t* adjust = CreateTextButton(settings_detail_, symbols[index], lv_color_hex(0x374151), 36, 38);
+            lv_obj_set_pos(adjust, positions[index], y_positions[index]);
             lv_obj_set_user_data(adjust, reinterpret_cast<void*>(static_cast<intptr_t>(adjustments[index])));
             lv_obj_add_event_cb(adjust, SettingsAdjustCallback, LV_EVENT_CLICKED, this);
         }
         settings_action_ = SettingsAction::kSaveWeather;
         lv_obj_t* action = CreateTextButton(settings_detail_, "保存位置", lv_color_hex(0x2563eb), 160, 46);
-        lv_obj_align(action, LV_ALIGN_BOTTOM_MID, 0, -34);
+        lv_obj_set_size(action, 140, 40);
+        lv_obj_align(action, LV_ALIGN_BOTTOM_MID, 0, -8);
         lv_obj_add_event_cb(action, SettingsActionCallback, LV_EVENT_CLICKED, this);
     }
 }
@@ -1030,7 +1093,7 @@ void WatchApplications::SettingsActionCallback(lv_event_t* event) {
                 settings.SetString("wallpaper_path", "");
                 lv_label_set_text(self->settings_status_label_, "已恢复默认黑色背景");
             } else if (selected - 1 < self->settings_wallpapers_.size()) {
-                const std::string path = "/壁纸/" + self->settings_wallpapers_[selected - 1].name;
+                const std::string path = "/wallpaper/" + self->settings_wallpapers_[selected - 1].name;
                 settings.SetString("wallpaper_path", path);
                 lv_label_set_text(self->settings_status_label_, "壁纸已保存\n进入时钟应用即可查看效果");
             }
@@ -1076,7 +1139,7 @@ void WatchApplications::SettingsActionCallback(lv_event_t* event) {
         case SettingsAction::kRescanSd: {
             lv_label_set_text(self->settings_status_label_, "正在扫描 MicroSD 卡...");
             lv_refr_now(nullptr);
-            const esp_err_t error = WatchStorage::Instance().EnsureMounted();
+            const esp_err_t error = WatchStorage::Instance().Remount();
             if (error == ESP_OK) lv_label_set_text(self->settings_status_label_, "MicroSD 卡已挂载");
             else lv_label_set_text_fmt(self->settings_status_label_, "未检测到可用 MicroSD 卡\n%s", esp_err_to_name(error));
             break;

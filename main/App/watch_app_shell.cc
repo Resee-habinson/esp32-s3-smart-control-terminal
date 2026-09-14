@@ -2,6 +2,7 @@
 
 #include "watch_countdown_service.h"
 #include "watch_menu_assets.h"
+#include "watch_ui_metrics.h"
 #include "watch_weather_assets.h"
 
 #include "boards/common/backlight.h"
@@ -16,20 +17,21 @@
 #include <initializer_list>
 #include <ctime>
 
+LV_FONT_DECLARE(time_80);
+
 namespace {
 constexpr char kTag[] = "watch_app";
-constexpr int kDisplayWidth = 480;
-constexpr int kDisplayHeight = 320;
-constexpr int kClockPanelWidth = 130;
-constexpr int kMenuWidth = kDisplayWidth - kClockPanelWidth - 12;
-constexpr int kMenuHeight = 128;
+constexpr int kDisplayWidth = WatchUiMetrics::kWidth;
+constexpr int kDisplayHeight = WatchUiMetrics::kHeight;
+constexpr int kMenuWidth = WatchUiMetrics::kWidth;
+constexpr int kMenuHeight = 100;
 constexpr int kMenuIconSize = 60;
-constexpr int kMenuIconBoxSize = 72;
-constexpr int kMenuMinimumScale = 190;
-constexpr int kMenuMaximumScale = 300;
+constexpr int kMenuIconBoxSize = 60;
+constexpr int kMenuMinimumScale = 179;
+constexpr int kMenuMaximumScale = 307;
 constexpr size_t kMenuScaleLevelCount = 12;
-constexpr int kBrightnessDrawerHiddenY = 306;
-constexpr int kBrightnessDrawerVisibleY = 238;
+constexpr int kBrightnessDrawerHiddenY = 268;
+constexpr int kBrightnessDrawerVisibleY = 216;
 
 lv_image_dsc_t s_menu_images[WATCH_MENU_ICON_COUNT];
 lv_image_dsc_t s_menu_scaled_images[WATCH_MENU_ICON_COUNT][kMenuScaleLevelCount];
@@ -177,10 +179,14 @@ void WatchAppShell::CreateWatchScreen() {
     lv_obj_set_style_bg_color(watch_screen_, lv_color_black(), 0);
     lv_obj_set_style_bg_opa(watch_screen_, LV_OPA_COVER, 0);
 
-    /* 使用完整 480×320 逻辑画布，消除旧版 240×280 居中造成的左右黑框。 */
+    /*
+     * 物理 LCD 保持 480×320，只在中央建立原版 240×280 真实视口。此处不使用
+     * transform scale，避免 LVGL 为缩放对象申请离屏图层并绘制整张大画布。
+     */
     lv_obj_t* canvas = lv_obj_create(watch_screen_);
+    watch_viewport_ = canvas;
     lv_obj_set_size(canvas, kDisplayWidth, kDisplayHeight);
-    lv_obj_set_pos(canvas, 0, 0);
+    lv_obj_set_pos(canvas, WatchUiMetrics::kOffsetX, WatchUiMetrics::kOffsetY);
     lv_obj_set_style_bg_color(canvas, lv_color_black(), 0);
     lv_obj_set_style_bg_opa(canvas, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(canvas, 0, 0);
@@ -190,7 +196,7 @@ void WatchAppShell::CreateWatchScreen() {
     CreateClock(canvas);
     CreateWeatherWidget(canvas);
     CreateMenu(canvas);
-    applications_.Initialize(watch_screen_);
+    applications_.Initialize(canvas);
     CreateSystemLayers(canvas);
     lv_obj_add_event_cb(canvas, ScreenGestureCallback, LV_EVENT_GESTURE, this);
 
@@ -221,13 +227,13 @@ void WatchAppShell::CreateClock(lv_obj_t* parent) {
         lv_obj_set_style_text_color(label, lv_color_white(), 0);
     }
 
-    /* 使用随当前 LVGL 一同编译的字体，避免旧版字体描述符触发空回调重启。 */
-    lv_obj_set_style_text_font(hour_label_, &lv_font_montserrat_48, 0);
-    lv_obj_set_style_text_font(minute_label_, &lv_font_montserrat_48, 0);
-    lv_obj_set_style_text_font(second_label_, &lv_font_montserrat_14, 0);
-    lv_obj_align(hour_label_, LV_ALIGN_TOP_LEFT, 24, 24);
-    lv_obj_align_to(minute_label_, hour_label_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 4);
-    lv_obj_align_to(second_label_, minute_label_, LV_ALIGN_OUT_BOTTOM_LEFT, 4, 8);
+    /* 完全复用原工程 AGENCYB 80 px 数字字体及坐标。 */
+    lv_obj_set_style_text_font(hour_label_, &time_80, 0);
+    lv_obj_set_style_text_font(minute_label_, &time_80, 0);
+    lv_obj_set_style_text_font(second_label_, &lv_font_montserrat_24, 0);
+    lv_obj_align(hour_label_, LV_ALIGN_TOP_LEFT, 20, 20);
+    lv_obj_align_to(minute_label_, hour_label_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 5);
+    lv_obj_align_to(second_label_, minute_label_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 5);
 }
 
 /**
@@ -241,8 +247,9 @@ void WatchAppShell::CreateWeatherWidget(lv_obj_t* parent) {
 
     weather_image_ = lv_image_create(parent);
     lv_image_set_src(weather_image_, &s_weather_images[kDefaultWeatherIconIndex]);
-    lv_obj_set_size(weather_image_, WEATHER_IMG_WIDTH, WEATHER_IMG_HEIGHT);
-    lv_obj_set_pos(weather_image_, 15, 190);
+    lv_image_set_scale(weather_image_, LV_SCALE_NONE);
+    /* 原版天气容器位于 (95,20)，图标在容器内偏移 (25,0)。 */
+    lv_obj_set_pos(weather_image_, 120, 20);
     lv_obj_remove_flag(weather_image_, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_flag(weather_image_, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(weather_image_, WeatherClickCallback, LV_EVENT_CLICKED, this);
@@ -250,10 +257,10 @@ void WatchAppShell::CreateWeatherWidget(lv_obj_t* parent) {
 
     weather_text_ = lv_label_create(parent);
     lv_label_set_text(weather_text_, "天气同步中");
-    lv_obj_set_width(weather_text_, 110);
+    lv_obj_set_width(weather_text_, 135);
     lv_obj_set_style_text_color(weather_text_, lv_color_hex(0xcbd5e1), 0);
     lv_obj_set_style_text_align(weather_text_, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(weather_text_, 4, 282);
+    lv_obj_set_pos(weather_text_, 95, 122);
 }
 
 void WatchAppShell::WeatherClickCallback(lv_event_t* event) {
@@ -264,7 +271,7 @@ void WatchAppShell::WeatherClickCallback(lv_event_t* event) {
 void WatchAppShell::CreateMenu(lv_obj_t* parent) {
     lv_obj_t* menu = lv_obj_create(parent);
     lv_obj_set_size(menu, kMenuWidth, kMenuHeight);
-    lv_obj_align(menu, LV_ALIGN_RIGHT_MID, -6, 44);
+    lv_obj_align(menu, LV_ALIGN_CENTER, 0, 80);
     lv_obj_set_flex_flow(menu, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_bg_opa(menu, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(menu, 0, 0);
@@ -304,8 +311,8 @@ void WatchAppShell::CreateSystemLayers(lv_obj_t* parent) {
      * 状态栏与应用 overlay 同为 Screen 的直接子对象，应用打开后可重新提升到最前方。
      * 如果继续挂在主页 canvas 内，全屏应用会按 LVGL 的兄弟层级规则把它完全遮住。
      */
-    status_bar_ = lv_obj_create(watch_screen_);
-    lv_obj_set_size(status_bar_, kDisplayWidth, 30);
+    status_bar_ = lv_obj_create(watch_viewport_);
+    lv_obj_set_size(status_bar_, kDisplayWidth, WatchUiMetrics::kStatusBarHeight);
     lv_obj_set_pos(status_bar_, 0, 0);
     lv_obj_set_style_bg_opa(status_bar_, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(status_bar_, 0, 0);
@@ -318,14 +325,13 @@ void WatchAppShell::CreateSystemLayers(lv_obj_t* parent) {
     lv_label_set_text(status_time_label_, "00:00:00");
     lv_obj_set_style_text_color(status_time_label_, lv_color_white(), 0);
     /* 时间使用同属原项目 Montserrat 字族的 16 px 字号，避免 480 px 屏幕上 12 px 笔画过细。 */
-    lv_obj_set_style_text_font(status_time_label_, &lv_font_montserrat_16, 0);
-    lv_obj_set_style_text_letter_space(status_time_label_, 1, 0);
-    lv_obj_align(status_time_label_, LV_ALIGN_TOP_LEFT, 12, 6);
+    lv_obj_set_style_text_font(status_time_label_, &lv_font_montserrat_12, 0);
+    lv_obj_align(status_time_label_, LV_ALIGN_TOP_LEFT, 5, 5);
 
     /* 电量采用独立图形，不依赖符号字体，避免电池字符缺字后整块状态消失。 */
     battery_area_ = lv_obj_create(status_bar_);
     lv_obj_set_size(battery_area_, 24, 12);
-    lv_obj_align(battery_area_, LV_ALIGN_TOP_RIGHT, -20, 9);
+    lv_obj_align(battery_area_, LV_ALIGN_TOP_RIGHT, -4, 6);
     lv_obj_set_style_bg_opa(battery_area_, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(battery_area_, 1, 0);
     lv_obj_set_style_border_color(battery_area_, lv_color_white(), 0);
@@ -355,27 +361,27 @@ void WatchAppShell::CreateSystemLayers(lv_obj_t* parent) {
     battery_label_ = lv_label_create(status_bar_);
     lv_label_set_text(battery_label_, "--%");
     lv_obj_set_style_text_color(battery_label_, lv_color_hex(0xe2e8f0), 0);
-    lv_obj_set_style_text_font(battery_label_, &lv_font_montserrat_16, 0);
+    lv_obj_set_style_text_font(battery_label_, &lv_font_montserrat_12, 0);
     lv_obj_align_to(battery_label_, battery_area_, LV_ALIGN_OUT_LEFT_MID, -3, 0);
 
     fps_label_ = lv_label_create(status_bar_);
     lv_label_set_text(fps_label_, "0 FPS");
     lv_obj_set_style_text_color(fps_label_, lv_color_hex(0x94a3b8), 0);
-    lv_obj_set_style_text_font(fps_label_, &lv_font_montserrat_16, 0);
-    lv_obj_align_to(fps_label_, battery_label_, LV_ALIGN_OUT_LEFT_MID, -8, 0);
+    lv_obj_set_style_text_font(fps_label_, &lv_font_montserrat_12, 0);
+    lv_obj_align_to(fps_label_, battery_label_, LV_ALIGN_OUT_LEFT_MID, -4, 0);
 
-    brightness_drawer_ = lv_obj_create(watch_screen_);
-    lv_obj_set_size(brightness_drawer_, 440, 72);
-    /* 隐藏时仍保留 14 px 抓手，复用原工程“可拖动容器”的交互方式。 */
-    lv_obj_set_pos(brightness_drawer_, 20, kBrightnessDrawerHiddenY);
-    lv_obj_set_style_radius(brightness_drawer_, 24, 0);
+    brightness_drawer_ = lv_obj_create(watch_viewport_);
+    lv_obj_set_size(brightness_drawer_, 228, 64);
+    /* 隐藏时仍保留 12 px 抓手，复用原工程“可拖动容器”的交互方式。 */
+    lv_obj_set_pos(brightness_drawer_, 6, kBrightnessDrawerHiddenY);
+    lv_obj_set_style_radius(brightness_drawer_, 18, 0);
     lv_obj_set_style_bg_color(brightness_drawer_, lv_color_hex(0x172033), 0);
     lv_obj_set_style_bg_opa(brightness_drawer_, LV_OPA_90, 0);
     lv_obj_set_style_border_color(brightness_drawer_, lv_color_hex(0x334155), 0);
     lv_obj_set_style_border_width(brightness_drawer_, 1, 0);
     lv_obj_remove_flag(brightness_drawer_, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_t* drawer_handle = lv_obj_create(brightness_drawer_);
-    lv_obj_set_size(drawer_handle, 72, 5);
+    lv_obj_set_size(drawer_handle, 54, 4);
     lv_obj_align(drawer_handle, LV_ALIGN_TOP_MID, 0, 4);
     lv_obj_set_style_bg_color(drawer_handle, lv_color_hex(0x94a3b8), 0);
     lv_obj_set_style_border_width(drawer_handle, 0, 0);
@@ -385,10 +391,10 @@ void WatchAppShell::CreateSystemLayers(lv_obj_t* parent) {
     lv_obj_t* brightness_title = lv_label_create(brightness_drawer_);
     lv_label_set_text(brightness_title, LV_SYMBOL_EYE_OPEN "  屏幕亮度");
     lv_obj_set_style_text_color(brightness_title, lv_color_white(), 0);
-    lv_obj_align(brightness_title, LV_ALIGN_LEFT_MID, 12, 0);
+    lv_obj_align(brightness_title, LV_ALIGN_LEFT_MID, 4, 2);
     brightness_slider_ = lv_slider_create(brightness_drawer_);
-    lv_obj_set_size(brightness_slider_, 250, 16);
-    lv_obj_align(brightness_slider_, LV_ALIGN_RIGHT_MID, -10, 0);
+    lv_obj_set_size(brightness_slider_, 142, 14);
+    lv_obj_align(brightness_slider_, LV_ALIGN_RIGHT_MID, -4, 2);
     lv_slider_set_range(brightness_slider_, 5, 100);
     Backlight* backlight = Board::GetInstance().GetBacklight();
     lv_slider_set_value(brightness_slider_, backlight == nullptr ? 80 : backlight->brightness(), LV_ANIM_OFF);
@@ -400,17 +406,17 @@ void WatchAppShell::CreateSystemLayers(lv_obj_t* parent) {
     lv_obj_add_event_cb(brightness_drawer_, BrightnessDrawerTouchCallback, LV_EVENT_RELEASED, this);
 
     /* 通知层挂在屏幕根节点上，应用全屏展开后仍可移动到最前方显示。 */
-    notification_panel_ = lv_obj_create(watch_screen_);
-    lv_obj_set_size(notification_panel_, 360, 52);
-    lv_obj_set_pos(notification_panel_, 60, -58);
-    lv_obj_set_style_radius(notification_panel_, 20, 0);
+    notification_panel_ = lv_obj_create(watch_viewport_);
+    lv_obj_set_size(notification_panel_, 228, 44);
+    lv_obj_set_pos(notification_panel_, 6, -48);
+    lv_obj_set_style_radius(notification_panel_, 16, 0);
     lv_obj_set_style_bg_color(notification_panel_, lv_color_hex(0x1e293b), 0);
     lv_obj_set_style_bg_opa(notification_panel_, LV_OPA_90, 0);
     lv_obj_set_style_border_color(notification_panel_, lv_color_hex(0x60a5fa), 0);
     lv_obj_set_style_border_width(notification_panel_, 1, 0);
     lv_obj_remove_flag(notification_panel_, LV_OBJ_FLAG_SCROLLABLE);
     notification_label_ = lv_label_create(notification_panel_);
-    lv_obj_set_width(notification_label_, 326);
+    lv_obj_set_width(notification_label_, 206);
     lv_obj_set_style_text_align(notification_label_, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_color(notification_label_, lv_color_white(), 0);
     lv_obj_center(notification_label_);
@@ -441,7 +447,7 @@ void WatchAppShell::ShowNotification(const char* text) {
     if (notification_label_ == nullptr || text == nullptr) return;
     lv_label_set_text(notification_label_, text);
     lv_obj_move_foreground(notification_panel_);
-    AnimatePanel(notification_panel_, 8);
+    AnimatePanel(notification_panel_, 4);
     notification_deadline_us_ = esp_timer_get_time() + 3500000LL;
 }
 
@@ -476,7 +482,11 @@ void WatchAppShell::GlobalTouchCallback(lv_event_t* event) {
     if (code == LV_EVENT_PRESSED) {
         shell->global_touch_start_ = point;
         shell->global_touch_tracking_ =
-            shell->active_app_ == ActiveApp::kWatch && !shell->applications_.IsOpen();
+            shell->active_app_ == ActiveApp::kWatch && !shell->applications_.IsOpen() &&
+            point.x >= WatchUiMetrics::kOffsetX &&
+            point.x < WatchUiMetrics::kOffsetX + WatchUiMetrics::kWidth &&
+            point.y >= WatchUiMetrics::kOffsetY &&
+            point.y < WatchUiMetrics::kOffsetY + WatchUiMetrics::kHeight;
         return;
     }
     if (code != LV_EVENT_RELEASED || !shell->global_touch_tracking_) return;
@@ -486,6 +496,16 @@ void WatchAppShell::GlobalTouchCallback(lv_event_t* event) {
     constexpr int32_t kDirectionMargin = 12;
     const int32_t delta_x = point.x - shell->global_touch_start_.x;
     const int32_t delta_y = point.y - shell->global_touch_start_.y;
+
+    /*
+     * 抽屉展开后优先识别向下收回动作。此分支不要求严格垂直，避免手指落在滑块或
+     * 抽屉子控件上时，轻微横向偏移导致全局手势被方向裕量过滤。
+     */
+    constexpr int32_t kDrawerCloseSwipe = 16;
+    if (shell->brightness_drawer_visible_ && delta_y >= kDrawerCloseSwipe) {
+        shell->ShowBrightnessDrawer(false);
+        return;
+    }
     if (LV_ABS(delta_y) < kMinimumVerticalSwipe ||
         LV_ABS(delta_y) <= LV_ABS(delta_x) + kDirectionMargin) return;
 
@@ -614,8 +634,9 @@ void WatchAppShell::LayoutMenu(lv_obj_t* menu) {
             continue;
         }
         const int32_t distance = LV_MIN(LV_ABS(image_center_x - menu_center_x), half_width);
-        const int32_t scale = 300 - (110 * distance / LV_MAX(half_width, 1));
-        const int32_t arc_offset = 8 + (34 * distance * distance /
+        const int32_t scale = kMenuMaximumScale -
+            ((kMenuMaximumScale - kMenuMinimumScale) * distance / LV_MAX(half_width, 1));
+        const int32_t arc_offset = 4 + (24 * distance * distance /
                                         LV_MAX(half_width * half_width, 1));
         if (s_menu_scale_cache_ready) {
             const size_t icon = reinterpret_cast<uintptr_t>(lv_obj_get_user_data(image));
@@ -664,7 +685,7 @@ void WatchAppShell::UpdateClock() {
     applications_.RefreshWeatherIfStale();
     if (WatchCountdownService::Instance().TakeFinishedEvent()) ShowNotification("倒计时结束");
     if (notification_deadline_us_ != 0 && esp_timer_get_time() >= notification_deadline_us_) {
-        AnimatePanel(notification_panel_, -58);
+        AnimatePanel(notification_panel_, -48);
         notification_deadline_us_ = 0;
     }
 }

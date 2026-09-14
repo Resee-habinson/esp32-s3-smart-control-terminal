@@ -63,6 +63,7 @@ private:
 
     lv_obj_t* xiaozhi_screen_ = nullptr;  // 小智原界面，外壳只引用、不负责销毁
     lv_obj_t* watch_screen_ = nullptr;    // 手表主界面，由 LVGL 管理生命周期
+    lv_obj_t* watch_viewport_ = nullptr;  // 物理屏幕中央 240×280 的手表有效显示区
     lv_obj_t* hour_label_ = nullptr;
     lv_obj_t* minute_label_ = nullptr;
     lv_obj_t* second_label_ = nullptr;

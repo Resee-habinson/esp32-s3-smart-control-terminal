@@ -30,6 +30,14 @@ public:
     esp_err_t EnsureMounted();
 
     /**
+     * 函    数：强制重新挂载 SD 卡
+     * 参    数：无
+     * 返 回 值：ESP_OK 表示重新挂载成功；其他值为卸载或挂载阶段的原始错误码
+     * 注意事项：本函数会关闭当前 FATFS 挂载点，只能在没有媒体后台任务读卡时调用，不可在 ISR 中调用
+     */
+    esp_err_t Remount();
+
+    /**
      * 函    数：把应用使用的 SD 相对路径转换为 FATFS VFS 路径
      * 参    数：path 必须以“/”开头且不能包含路径穿越；resolved 接收完整路径
      * 返 回 值：ESP_OK 表示路径可用；其他值表示未挂载、参数错误或路径非法
@@ -66,6 +74,7 @@ private:
     bool ResolvePath(const std::string& path, std::string* resolved) const;
 
     bool mounted_ = false;
+    void* mounted_card_ = nullptr;  // 保存 sdmmc_card_t 句柄，具体类型只在 BSP 实现文件中可见
     esp_err_t last_mount_error_ = ESP_ERR_INVALID_STATE;
 };
 

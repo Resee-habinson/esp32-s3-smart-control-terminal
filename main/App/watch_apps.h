@@ -170,6 +170,7 @@ private:
     static void VideoTaskEntry(void* parameter);
     static void MusicTaskEntry(void* parameter);
     void UpdateActiveApplication();
+    void RefreshActiveTextFont();
     void UpdateClock();
     void UpdateStopwatch();
     void UpdateCountdown();
@@ -232,6 +233,7 @@ private:
     lv_obj_t* overlay_ = nullptr;       // 当前应用覆盖层，由本类创建和删除
     lv_timer_t* app_timer_ = nullptr;   // 当前应用 UI 更新定时器，仅在应用打开时存在
     AppId active_app_ = AppId::kCount;
+    const lv_font_t* active_text_font_ = nullptr;  // 当前应用对象树绑定的主题字体，不拥有字体生命周期
 
     lv_obj_t* clock_wallpaper_ = nullptr;
     lv_obj_t* clock_time_label_ = nullptr;

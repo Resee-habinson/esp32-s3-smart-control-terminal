@@ -1,8 +1,10 @@
 # ESP-IDF Partition Table
-# Name,   Type, SubType, Offset,  Size, Flags
+# Name,   Type, SubType, Offset,    Size,     Flags
 nvs,      data, nvs,     0x9000,    0x4000,
 otadata,  data, ota,     0xd000,    0x2000,
 phy_init, data, phy,     0xf000,    0x1000,
-ota_0,    app,  ota_0,   0x20000,   0x3f0000,
-ota_1,    app,  ota_1,   ,          0x3f0000,
-assets,   data, spiffs,  0x800000,  8M
+# 两个 6 MiB 应用槽继续支持小智 OTA，并为原版 UI 字体预留程序空间。
+ota_0,    app,  ota_0,   0x20000,   0x600000,
+ota_1,    app,  ota_1,   0x620000,  0x600000,
+# 当前资源包约 1.59 MiB；剩余 0x3e0000（3.875 MiB）全部留给 assets。
+assets,   data, spiffs,  0xc20000,  0x3e0000,

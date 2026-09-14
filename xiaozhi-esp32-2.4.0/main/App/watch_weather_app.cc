@@ -5,6 +5,7 @@
 #include "display/lvgl_display/lvgl_theme.h"
 #include "settings.h"
 #include "watch_weather_assets.h"
+#include "watch_ui_metrics.h"
 
 #include <cJSON.h>
 #include <esp_heap_caps.h>
@@ -21,10 +22,10 @@
 namespace {
 constexpr char kTag[] = "watch_weather";
 constexpr size_t kMaximumResponseBytes = 32U * 1024U;
-constexpr int32_t kWeatherPanelWidth = 460;
-constexpr int32_t kWeatherDayCardWidth = 100;
+constexpr int32_t kWeatherPanelWidth = WatchUiMetrics::kContentWidth;
+constexpr int32_t kWeatherDayCardWidth = 90;
 constexpr int32_t kWeatherEdgePadding = (kWeatherPanelWidth - kWeatherDayCardWidth) / 2;
-constexpr int32_t kWeatherIconSize = 55;
+constexpr int32_t kWeatherIconSize = 48;
 
 lv_image_dsc_t s_weather_images[WEATHER_FRAME_CNT];
 uint16_t* s_weather_image_pixels[WEATHER_FRAME_CNT] = {};
@@ -132,13 +133,13 @@ void WatchApplications::CreateWeather() {
     lv_label_set_text(title, "未来七天天气");
     lv_obj_set_style_text_font(title, GetWeatherFont(), 0);
     lv_obj_set_style_text_color(title, lv_color_white(), 0);
-    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 18);
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 28);
 
     lv_obj_t* refresh = lv_button_create(overlay_);
-    lv_obj_set_size(refresh, 54, 40);
-    lv_obj_align(refresh, LV_ALIGN_TOP_RIGHT, -12, 34);
+    lv_obj_set_size(refresh, 44, 32);
+    lv_obj_align(refresh, LV_ALIGN_TOP_RIGHT, -6, 28);
     lv_obj_set_style_bg_color(refresh, lv_color_hex(0x2563eb), 0);
-    lv_obj_set_style_radius(refresh, 20, 0);
+    lv_obj_set_style_radius(refresh, 16, 0);
     lv_obj_set_style_border_width(refresh, 0, 0);
     lv_obj_t* refresh_icon = lv_label_create(refresh);
     lv_label_set_text(refresh_icon, LV_SYMBOL_REFRESH);
@@ -147,8 +148,8 @@ void WatchApplications::CreateWeather() {
     lv_obj_add_event_cb(refresh, WeatherRefreshCallback, LV_EVENT_CLICKED, this);
 
     weather_panel_ = lv_obj_create(overlay_);
-    lv_obj_set_size(weather_panel_, kWeatherPanelWidth, 228);
-    lv_obj_set_pos(weather_panel_, 10, 82);
+    lv_obj_set_size(weather_panel_, kWeatherPanelWidth, 214);
+    lv_obj_set_pos(weather_panel_, 6, 62);
     lv_obj_set_style_pad_all(weather_panel_, 0, 0);
     /*
      * 左右各保留 180 px，使 100 px 宽的第一天和第七天都能滑到 460 px 视口中央。
@@ -371,7 +372,7 @@ void WatchApplications::RenderWeather() {
          * 旧实现只有一个 700 px 宽的直接子对象，松手后总会吸回同一个中心点。
          */
         lv_obj_t* day_card = lv_obj_create(weather_panel_);
-        lv_obj_set_size(day_card, kWeatherDayCardWidth, 236);
+        lv_obj_set_size(day_card, kWeatherDayCardWidth, 214);
         lv_obj_set_pos(day_card, x, 0);
         lv_obj_set_style_bg_opa(day_card, LV_OPA_TRANSP, 0);
         lv_obj_set_style_border_width(day_card, 0, 0);
@@ -386,8 +387,8 @@ void WatchApplications::RenderWeather() {
             lv_obj_set_pos(image, (kWeatherDayCardWidth - kWeatherIconSize) / 2, 4);
         } else {
             /* PSRAM 不足时保留旧的软件缩放回退路径。 */
-            lv_image_set_scale(image, 141);
-            lv_obj_set_pos(image, 0, -18);
+            lv_image_set_scale(image, 123);
+            lv_obj_set_pos(image, -4, -20);
         }
         lv_obj_t* description = lv_label_create(day_card);
         lv_label_set_text(description, WeatherDescription(day.code));
@@ -395,25 +396,25 @@ void WatchApplications::RenderWeather() {
         lv_obj_set_style_text_font(description, GetWeatherFont(), 0);
         lv_obj_set_style_text_align(description, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_style_text_color(description, lv_color_white(), 0);
-        lv_obj_set_pos(description, 0, 66);
+        lv_obj_set_pos(description, 0, 50);
         lv_obj_t* maximum = lv_label_create(day_card);
         lv_label_set_text_fmt(maximum, "最高 %.1f°", day.maximum_tenths / 10.0);
         lv_obj_set_width(maximum, kWeatherDayCardWidth);
         lv_obj_set_style_text_align(maximum, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_style_text_color(maximum, lv_color_hex(0xfef08a), 0);
-        lv_obj_set_pos(maximum, 0, 116);
+        lv_obj_set_pos(maximum, 0, 80);
         lv_obj_t* minimum = lv_label_create(day_card);
         lv_label_set_text_fmt(minimum, "最低 %.1f°", day.minimum_tenths / 10.0);
         lv_obj_set_width(minimum, kWeatherDayCardWidth);
         lv_obj_set_style_text_align(minimum, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_style_text_color(minimum, lv_color_hex(0xbfdbfe), 0);
-        lv_obj_set_pos(minimum, 0, 154);
+        lv_obj_set_pos(minimum, 0, 108);
         lv_obj_t* date = lv_label_create(day_card);
         lv_label_set_text(date, day.date.data());
         lv_obj_set_width(date, kWeatherDayCardWidth);
         lv_obj_set_style_text_align(date, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_style_text_color(date, lv_color_hex(0x94a3b8), 0);
-        lv_obj_set_pos(date, 0, 204);
+        lv_obj_set_pos(date, 0, 144);
     }
 
     /* 新数据到达后回到第一天，避免沿用上一次预报的滚动偏移。 */

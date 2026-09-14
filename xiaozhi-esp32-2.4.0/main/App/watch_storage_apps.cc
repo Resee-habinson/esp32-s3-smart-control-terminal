@@ -1,4 +1,5 @@
 #include "watch_apps.h"
+#include "watch_ui_metrics.h"
 
 #include <esp_log.h>
 
@@ -53,7 +54,7 @@ lv_obj_t* CreatePageTitle(lv_obj_t* parent, const char* title) {
     lv_obj_t* label = lv_label_create(parent);
     lv_label_set_text(label, title);
     lv_obj_set_style_text_color(label, lv_color_white(), 0);
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 16);
+    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 28);
     return label;
 }
 
@@ -61,7 +62,7 @@ lv_obj_t* CreatePageTitle(lv_obj_t* parent, const char* title) {
 void ShowStorageError(lv_obj_t* parent, const char* message, esp_err_t error) {
     lv_obj_t* label = lv_label_create(parent);
     lv_label_set_text_fmt(label, "%s\n%s\n\n请检查 SD 卡后重新进入应用", message, esp_err_to_name(error));
-    lv_obj_set_width(label, 420);
+    lv_obj_set_width(label, 220);
     lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_color(label, lv_color_hex(0xfca5a5), 0);
@@ -83,9 +84,9 @@ void WatchApplications::RefreshNovelList() {
     CreatePageTitle(overlay_, "小说");
 
     std::vector<WatchStorage::Entry> all_entries;
-    const esp_err_t error = WatchStorage::Instance().ListDirectory("/小说", &all_entries);
+    const esp_err_t error = WatchStorage::Instance().ListDirectory("/novel", &all_entries);
     if (error != ESP_OK) {
-        ShowStorageError(overlay_, error == ESP_ERR_NOT_FOUND ? "未找到 /小说 文件夹" : "SD 卡读取失败", error);
+        ShowStorageError(overlay_, error == ESP_ERR_NOT_FOUND ? "未找到 /novel 文件夹" : "SD 卡读取失败", error);
         return;
     }
 
@@ -97,8 +98,8 @@ void WatchApplications::RefreshNovelList() {
               [](const auto& left, const auto& right) { return left.name < right.name; });
 
     novel_list_ = lv_obj_create(overlay_);
-    lv_obj_set_size(novel_list_, 448, 228);
-    lv_obj_align(novel_list_, LV_ALIGN_BOTTOM_MID, 0, -8);
+    lv_obj_set_size(novel_list_, WatchUiMetrics::kContentWidth, 214);
+    lv_obj_align(novel_list_, LV_ALIGN_BOTTOM_MID, 0, -4);
     lv_obj_set_style_bg_color(novel_list_, lv_color_hex(0x111827), 0);
     lv_obj_set_style_border_width(novel_list_, 0, 0);
     lv_obj_set_style_pad_all(novel_list_, 8, 0);
@@ -107,15 +108,15 @@ void WatchApplications::RefreshNovelList() {
 
     if (novel_entries_.empty()) {
         lv_obj_t* empty = lv_label_create(novel_list_);
-        lv_label_set_text(empty, "没有找到 TXT 小说\n请把 UTF-8 文本放入 SD 卡的 /小说 文件夹");
-        lv_obj_set_width(empty, 410);
+        lv_label_set_text(empty, "没有找到 TXT 小说\n请把 UTF-8 文本放入 SD 卡的 /novel 文件夹");
+        lv_obj_set_width(empty, 204);
         lv_obj_set_style_text_align(empty, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_style_text_color(empty, lv_color_hex(0x9ca3af), 0);
         return;
     }
 
     for (size_t index = 0; index < novel_entries_.size(); ++index) {
-        lv_obj_t* button = CreateStorageButton(novel_list_, novel_entries_[index].name.c_str(), 416, 46,
+        lv_obj_t* button = CreateStorageButton(novel_list_, novel_entries_[index].name.c_str(), 212, 40,
                                                lv_color_hex(0x263244));
         lv_obj_set_user_data(button, reinterpret_cast<void*>(index + 1));
         lv_obj_add_event_cb(button, NovelItemCallback, LV_EVENT_CLICKED, this);
@@ -130,43 +131,46 @@ void WatchApplications::NovelItemCallback(lv_event_t* event) {
 
 void WatchApplications::OpenNovel(size_t index) {
     if (index >= novel_entries_.size()) return;
-    novel_path_ = "/小说/" + novel_entries_[index].name;
+    novel_path_ = "/novel/" + novel_entries_[index].name;
     novel_page_history_.clear();
     uint32_t saved_offset = 0;
     WatchStorage::Instance().LoadReadingOffset(novel_path_, &saved_offset);
 
     lv_obj_clean(overlay_);
     lv_obj_t* list_button = CreateStorageButton(overlay_, "目录", 72, 38, lv_color_hex(0x374151));
-    lv_obj_set_pos(list_button, 12, 34);
+    lv_obj_set_size(list_button, 60, 32);
+    lv_obj_set_pos(list_button, 6, 28);
     lv_obj_add_event_cb(list_button, NovelListCallback, LV_EVENT_CLICKED, this);
 
     lv_obj_t* title = CreatePageTitle(overlay_, novel_entries_[index].name.c_str());
-    lv_obj_set_width(title, 285);
+    lv_obj_set_width(title, 150);
     lv_label_set_long_mode(title, LV_LABEL_LONG_DOT);
     lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
 
     novel_progress_label_ = lv_label_create(overlay_);
     lv_obj_set_style_text_color(novel_progress_label_, lv_color_hex(0x9ca3af), 0);
-    lv_obj_align(novel_progress_label_, LV_ALIGN_TOP_RIGHT, -16, 42);
+    lv_obj_align(novel_progress_label_, LV_ALIGN_TOP_RIGHT, -6, 34);
 
     lv_obj_t* content = lv_obj_create(overlay_);
-    lv_obj_set_size(content, 452, 188);
-    lv_obj_set_pos(content, 14, 80);
+    lv_obj_set_size(content, 228, 170);
+    lv_obj_set_pos(content, 6, 64);
     lv_obj_set_style_bg_color(content, lv_color_hex(0xf6f0df), 0);
     lv_obj_set_style_border_width(content, 0, 0);
     lv_obj_set_style_radius(content, 10, 0);
-    lv_obj_set_style_pad_all(content, 12, 0);
+    lv_obj_set_style_pad_all(content, 8, 0);
     lv_obj_remove_flag(content, LV_OBJ_FLAG_SCROLLABLE);
     novel_content_label_ = lv_label_create(content);
-    lv_obj_set_width(novel_content_label_, 426);
+    lv_obj_set_width(novel_content_label_, 212);
     lv_label_set_long_mode(novel_content_label_, LV_LABEL_LONG_WRAP);
     lv_obj_set_style_text_color(novel_content_label_, lv_color_hex(0x27231c), 0);
     lv_obj_align(novel_content_label_, LV_ALIGN_TOP_LEFT, 0, 0);
 
     novel_previous_button_ = CreateStorageButton(overlay_, "上一页", 110, 38, lv_color_hex(0x374151));
     novel_next_button_ = CreateStorageButton(overlay_, "下一页", 110, 38, lv_color_hex(0x2563eb));
-    lv_obj_align(novel_previous_button_, LV_ALIGN_BOTTOM_LEFT, 14, -6);
-    lv_obj_align(novel_next_button_, LV_ALIGN_BOTTOM_RIGHT, -14, -6);
+    lv_obj_set_size(novel_previous_button_, 90, 32);
+    lv_obj_set_size(novel_next_button_, 90, 32);
+    lv_obj_align(novel_previous_button_, LV_ALIGN_BOTTOM_LEFT, 6, -4);
+    lv_obj_align(novel_next_button_, LV_ALIGN_BOTTOM_RIGHT, -6, -4);
     lv_obj_add_event_cb(novel_previous_button_, NovelPreviousCallback, LV_EVENT_CLICKED, this);
     lv_obj_add_event_cb(novel_next_button_, NovelNextCallback, LV_EVENT_CLICKED, this);
     ShowNovelPage(saved_offset, false);
@@ -239,16 +243,17 @@ void WatchApplications::CreateFileManager() {
     file_delete_armed_ = false;
 
     lv_obj_t* back = CreateStorageButton(overlay_, "返回", 72, 38, lv_color_hex(0x374151));
-    lv_obj_set_pos(back, 12, 34);
+    lv_obj_set_size(back, 60, 32);
+    lv_obj_set_pos(back, 6, 28);
     lv_obj_add_event_cb(back, FileManagerBackCallback, LV_EVENT_CLICKED, this);
     file_manager_title_ = CreatePageTitle(overlay_, "/");
-    lv_obj_set_width(file_manager_title_, 350);
+    lv_obj_set_width(file_manager_title_, 150);
     lv_label_set_long_mode(file_manager_title_, LV_LABEL_LONG_DOT);
     lv_obj_set_style_text_align(file_manager_title_, LV_TEXT_ALIGN_CENTER, 0);
 
     file_manager_list_ = lv_obj_create(overlay_);
-    lv_obj_set_size(file_manager_list_, 452, 228);
-    lv_obj_align(file_manager_list_, LV_ALIGN_BOTTOM_MID, 0, -6);
+    lv_obj_set_size(file_manager_list_, WatchUiMetrics::kContentWidth, 214);
+    lv_obj_align(file_manager_list_, LV_ALIGN_BOTTOM_MID, 0, -4);
     lv_obj_set_style_bg_color(file_manager_list_, lv_color_hex(0x111827), 0);
     lv_obj_set_style_border_width(file_manager_list_, 0, 0);
     lv_obj_set_style_pad_all(file_manager_list_, 8, 0);
@@ -279,20 +284,20 @@ void WatchApplications::RefreshFileManager() {
         return RefreshFileManager();
     }
     if (file_manager_page_ > 0) {
-        lv_obj_t* top = CreateStorageButton(file_manager_list_, "回到顶部", 420, 44, lv_color_hex(0x1d4ed8));
+        lv_obj_t* top = CreateStorageButton(file_manager_list_, "回到顶部", 212, 40, lv_color_hex(0x1d4ed8));
         lv_obj_add_event_cb(top, FileManagerTopCallback, LV_EVENT_CLICKED, this);
     }
     const size_t end = std::min(file_manager_entries_.size(), first + kFilesPerPage);
     for (size_t index = first; index < end; ++index) {
         const auto& entry = file_manager_entries_[index];
         const std::string caption = std::string(entry.is_directory ? LV_SYMBOL_DIRECTORY "  " : LV_SYMBOL_FILE "  ") + entry.name;
-        lv_obj_t* button = CreateStorageButton(file_manager_list_, caption.c_str(), 420, 44,
+        lv_obj_t* button = CreateStorageButton(file_manager_list_, caption.c_str(), 212, 40,
                                                entry.is_directory ? lv_color_hex(0x334155) : lv_color_hex(0x202938));
         lv_obj_set_user_data(button, reinterpret_cast<void*>(index + 1));
         lv_obj_add_event_cb(button, FileManagerItemCallback, LV_EVENT_CLICKED, this);
     }
     if (end < file_manager_entries_.size()) {
-        lv_obj_t* next = CreateStorageButton(file_manager_list_, "下一页", 420, 44, lv_color_hex(0x1d4ed8));
+        lv_obj_t* next = CreateStorageButton(file_manager_list_, "下一页", 212, 40, lv_color_hex(0x1d4ed8));
         lv_obj_add_event_cb(next, FileManagerNextCallback, LV_EVENT_CLICKED, this);
     }
     if (file_manager_entries_.empty()) {
@@ -358,20 +363,20 @@ void WatchApplications::ShowFileDetails(size_t index) {
     const auto& entry = file_manager_entries_[index];
 
     file_details_dialog_ = lv_obj_create(overlay_);
-    lv_obj_set_size(file_details_dialog_, 370, 220);
+    lv_obj_set_size(file_details_dialog_, 220, 160);
     lv_obj_center(file_details_dialog_);
     lv_obj_set_style_bg_color(file_details_dialog_, lv_color_hex(0xf9fafb), 0);
     lv_obj_set_style_border_color(file_details_dialog_, lv_color_hex(0x64748b), 0);
     lv_obj_set_style_border_width(file_details_dialog_, 2, 0);
     lv_obj_set_style_radius(file_details_dialog_, 18, 0);
-    lv_obj_set_style_pad_all(file_details_dialog_, 18, 0);
+    lv_obj_set_style_pad_all(file_details_dialog_, 12, 0);
     lv_obj_remove_flag(file_details_dialog_, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t* path = lv_label_create(file_details_dialog_);
     const std::string full_path = file_manager_path_ == "/" ? "/" + entry.name :
                                   file_manager_path_ + "/" + entry.name;
     lv_label_set_text(path, full_path.c_str());
-    lv_obj_set_width(path, 330);
+    lv_obj_set_width(path, 194);
     lv_label_set_long_mode(path, LV_LABEL_LONG_WRAP);
     lv_obj_set_style_text_color(path, lv_color_hex(0x111827), 0);
     lv_obj_align(path, LV_ALIGN_TOP_LEFT, 0, 0);
@@ -386,6 +391,8 @@ void WatchApplications::ShowFileDetails(size_t index) {
     lv_obj_t* close = CreateStorageButton(file_details_dialog_, "关闭", 130, 44, lv_color_hex(0x64748b));
     lv_obj_t* remove = CreateStorageButton(file_details_dialog_, "删除", 130, 44, lv_color_hex(0xdc2626));
     file_delete_label_ = lv_obj_get_child(remove, 0);
+    lv_obj_set_size(close, 88, 35);
+    lv_obj_set_size(remove, 88, 35);
     lv_obj_align(close, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     lv_obj_align(remove, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
     lv_obj_add_event_cb(close, FileDetailsCloseCallback, LV_EVENT_CLICKED, this);

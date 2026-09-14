@@ -19,6 +19,7 @@ constexpr char kMountPoint[] = "/sdcard";
 constexpr gpio_num_t kSdClock = GPIO_NUM_11;
 constexpr gpio_num_t kSdCommand = GPIO_NUM_10;
 constexpr gpio_num_t kSdData0 = GPIO_NUM_9;
+constexpr int kSdClockKhz = 10000;
 constexpr size_t kMaximumEntries = 256;
 
 /** 函数：计算稳定的 FNV-1a 路径哈希；参数：路径；返回值：32 位哈希 */
@@ -50,7 +51,8 @@ esp_err_t WatchStorage::EnsureMounted() {
      * format_if_mount_failed，避免因卡片损坏或格式不支持而静默清空用户数据。
      */
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-    host.max_freq_khz = SDMMC_FREQ_DEFAULT;
+    /* 该板卡通过 GPIO Matrix 连接 1-bit SDMMC；10 MHz 对不同容量卡的走线裕量更充足。 */
+    host.max_freq_khz = kSdClockKhz;
     sdmmc_slot_config_t slot = SDMMC_SLOT_CONFIG_DEFAULT();
     slot.width = 1;
     slot.clk = kSdClock;
@@ -70,10 +72,27 @@ esp_err_t WatchStorage::EnsureMounted() {
         return last_mount_error_;
     }
 
+    mounted_card_ = card;
     mounted_ = true;
-    ESP_LOGI(kTag, "SD card mounted: capacity=%llu MiB",
-             static_cast<unsigned long long>(card->csd.capacity * card->csd.sector_size / 1024ULL / 1024ULL));
+    ESP_LOGI(kTag, "SD card mounted: capacity=%llu MiB, bus=%d kHz",
+             static_cast<unsigned long long>(card->csd.capacity * card->csd.sector_size / 1024ULL / 1024ULL),
+             kSdClockKhz);
     return ESP_OK;
+}
+
+esp_err_t WatchStorage::Remount() {
+    if (mounted_) {
+        const esp_err_t unmount_error = esp_vfs_fat_sdcard_unmount(
+            kMountPoint, static_cast<sdmmc_card_t*>(mounted_card_));
+        mounted_ = false;
+        mounted_card_ = nullptr;
+        if (unmount_error != ESP_OK) {
+            last_mount_error_ = unmount_error;
+            ESP_LOGW(kTag, "SD card unmount failed: %s", esp_err_to_name(unmount_error));
+            return unmount_error;
+        }
+    }
+    return EnsureMounted();
 }
 
 esp_err_t WatchStorage::GetVfsPath(const std::string& path, std::string* resolved) {
